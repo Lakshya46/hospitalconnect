@@ -1,0 +1,16 @@
+import Sidebar from "../components/patient/Sidebar";
+import { Outlet } from "react-router-dom";
+
+export default function PatientPanel() {
+  return (
+    <div className="flex min-h-screen bg-red-50">
+
+      <Sidebar />
+
+      <div className="flex-1 p-6">
+        <Outlet />
+      </div>
+
+    </div>
+  );
+}
