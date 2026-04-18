@@ -169,7 +169,16 @@ export default function Hospitals() {
                 <motion.div
                   layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   key={h._id}
-                  onClick={() => navigate(`/${role || 'guest'}/hospital/${h._id}`)}
+                  onClick={() => {
+  if (!role) {
+    // PUBLIC ROUTE (No prefix)
+    navigate(`/hospital/${h._id}`);
+  } else {
+    // AUTHENTICATED ROUTES
+    const prefix = role === "hospital" ? "hospital-admin" : "patient";
+    navigate(`/${prefix}/hospital/${h._id}`);
+  }
+}}
                   className="group bg-white p-5 rounded-3xl border border-slate-100 hover:border-rose-200 hover:shadow-xl hover:shadow-rose-900/5 transition-all cursor-pointer relative overflow-hidden"
                 >
                   {/* Status & Rating Row */}

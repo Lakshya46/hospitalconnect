@@ -30,15 +30,21 @@ import appointmentRoutes from "./routes/appointmentRoutes.js";
 import resourceRoutes from "./routes/resourceRoutes.js";
 import bloodRoutes from "./routes/bloodRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
+import requestRoutes from "./routes/requestRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import patientRoutes from "./routes/patientRoutes.js";
 
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/blood", bloodRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/hospital", hospitalRoutes);
-app.use("/api/appointments", appointmentRoutes);
+app.use("/api/appointment", appointmentRoutes);
 app.use("/api/resources", resourceRoutes);
-
+app.use("/api/requests", requestRoutes); // For resource requests
+app.use("/api/notifications", notificationRoutes); // For notifications
+app.use("/api/patient", patientRoutes);
 // ✅ ENV CHECK
+
 if (!process.env.MONGO_URI) {
   throw new Error("MONGO_URI missing in .env");
 }

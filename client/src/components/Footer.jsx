@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 function Footer() {
   return (
-    <footer className="bg-slate-900 text-slate-300 mt-2 border-t border-slate-800">
+    <footer className="bg-slate-900 text-slate-300  border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-8 py-20">
         <div className="grid gap-12 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           

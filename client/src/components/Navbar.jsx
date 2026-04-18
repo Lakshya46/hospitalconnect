@@ -38,18 +38,7 @@ function Navbar() {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-600 transition-all group-hover:w-full"></span>
               </Link>
             </li>
-            <li>
-              <Link to="/beds" className="hover:text-rose-600 transition-colors relative group">
-                Beds
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-600 transition-all group-hover:w-full"></span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/blood" className="hover:text-rose-600 transition-colors relative group">
-                Blood Bank
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rose-600 transition-all group-hover:w-full"></span>
-              </Link>
-            </li>
+            
           </ul>
 
           {/* ACTION BUTTONS */}

@@ -8,7 +8,7 @@ import {
   MdDashboard, MdEventAvailable, MdVerified, MdInventory2,
   MdBloodtype, MdPeople, MdPersonAdd, MdLogout, MdMenu,
   MdChevronLeft, MdAccountCircle, MdNotificationsNone, MdArrowForwardIos,
-  MdLocalHospital
+  MdLocalHospital ,MdRepeat
 } from "react-icons/md";
 
 const DEFAULT_LOGO = "https://img.icons8.com/fluency/200/hospital-room.png";
@@ -33,11 +33,16 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   const menu = [
     { name: "Dashboard", path: "/hospital-admin/dashboard", icon: <MdDashboard /> },
     { name: "Hospitals", path: "/hospital-admin/hospitals", icon: <MdVerified /> },
+   { 
+      name: "Resource Request", 
+      path: "/hospital-admin/resource-request", 
+      icon: <div className="relative"><MdRepeat /><span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-600 rounded-full animate-pulse border-2 border-white"></span></div> 
+    },
     { name: "Appointments", path: "/hospital-admin/appointments", icon: <MdEventAvailable /> },
     { name: "Resources", path: "/hospital-admin/resources", icon: <MdInventory2 /> },
     { name: "Blood Bank", path: "/hospital-admin/blood", icon: <MdBloodtype /> },
     { name: "Patients", path: "/hospital-admin/patients", icon: <MdPeople /> },
-    { name: "Staff", path: "/hospital-admin/doctor", icon: <MdPersonAdd /> },
+    { name: "Doctor", path: "/hospital-admin/doctor", icon: <MdPersonAdd /> },
     { name: "Inbox", path: "/hospital-admin/notifications", icon: <MdNotificationsNone /> },
   ];
 

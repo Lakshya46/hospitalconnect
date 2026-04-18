@@ -145,3 +145,66 @@ export const login = async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 };
+
+export const getMe = async (req, res) => {
+  try {
+    // 1. Fetch user from DB using the ID from the token
+    // We use .select("-password") to ensure the hash is never sent to the frontend
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // 2. Return the fresh user data
+    res.json(user);
+  } catch (err) {
+    console.error("Auth Error:", err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { name, phone, age, gender, bloodGroup, address, history } = req.body;
+
+    const updateData = {
+      name,
+      phone,
+      age,
+      gender,
+      bloodGroup,
+      address,
+    };
+
+    // 🔥 Cloudinary logic: Multer-Cloudinary puts the URL in req.file.path
+    if (req.file) {
+      updateData.profilePic = req.file.path; 
+    }
+
+    // Parse history if it was sent as a JSON string
+    if (history) {
+      try {
+        updateData.history = JSON.parse(history);
+      } catch (e) {
+        updateData.history = history; // Fallback if already an array
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id, 
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (err) {
+    console.error("Update Error:", err.message);
+    res.status(500).json({ msg: "Server Error", error: err.message });
+  }
+};

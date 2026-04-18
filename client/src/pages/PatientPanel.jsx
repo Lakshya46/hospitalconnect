@@ -1,16 +1,25 @@
-import Sidebar from "../components/patient/Sidebar";
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
+import Sidebar from "../components/patient/Sidebar";
 
-export default function PatientPanel() {
-  return (
-    <div className="flex min-h-screen bg-red-50">
+export default function PatientLayout() {
+  const [collapsed, setCollapsed] = useState(false);
 
-      <Sidebar />
-
-      <div className="flex-1 p-6">
-        <Outlet />
+  return  (
+      <div className="min-h-screen">
+  
+        {/* SIDEBAR */}
+        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+  
+        {/* MAIN CONTENT */}
+        <div
+          className={`p-6 transition-all duration-300
+            ${collapsed ? "ml-20" : "ml-64"}
+          `}
+        >
+          <Outlet />
+        </div>
+  
       </div>
-
-    </div>
-  );
+    );
 }

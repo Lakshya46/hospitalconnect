@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
 function App() {
   // Animation Variants
   const fadeInUp = {
@@ -18,11 +19,10 @@ function App() {
   return (
     <div className="bg-[#fcfdfe] min-h-screen font-sans text-slate-900">
       
-      {/* ===== HEADER / NAV ===== */}
- 
+
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative pt-44 pb-32 px-6">
+      <section className="relative pt-25 pb-32 px-6">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           
           <motion.div 
@@ -54,7 +54,6 @@ function App() {
             </motion.div>
           </motion.div>
 
-          {/* Animated Image Container */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -67,7 +66,6 @@ function App() {
               alt="Medical Team"
               className="rounded-[40px] shadow-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
             />
-            {/* Floating Resource Tag */}
             <motion.div 
               animate={pulseEffect}
               className="absolute -bottom-6 -right-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-50 flex items-center gap-4"
@@ -89,12 +87,99 @@ function App() {
           <StatBox number="12,000" label="Beds Managed" />
           <StatBox number="3.2s" label="Avg. Response Time" />
         </div>
-        {/* Background Network Pattern */}
         <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"></div>
       </section>
+
+      {/* ===== RESOURCE MANAGEMENT GRID ===== */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-20 text-center">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6">
+              Critical Resources, <span className="text-rose-600">One Tap Away.</span>
+            </h2>
+            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
+              Our mobile-first infrastructure ensures that healthcare providers can update and request life-saving assets from anywhere.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <ResourceCard 
+              icon="🏥" 
+              title="ICU & Beds" 
+              desc="Real-time occupancy tracking for General, Oxygen, and ICU beds."
+              color="blue"
+            />
+            <ResourceCard 
+              icon="🩸" 
+              title="Blood Bank" 
+              desc="Live inventory of blood groups with instant 'Emergency Need' broadcasts."
+              color="rose"
+            />
+            <ResourceCard 
+              icon="🌬️" 
+              title="Oxygen Supply" 
+              desc="Monitor cylinder levels and liquid oxygen plant pressure remotely."
+              color="cyan"
+            />
+            <ResourceCard 
+              icon="📅" 
+              title="Appointments" 
+              desc="Smart scheduling to reduce OPD overcrowding and manage patient flow."
+              color="emerald"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ===== INTER-HOSPITAL REQUEST LOGISTICS ===== */}
+      <section className="py-24 px-6 bg-slate-50">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+          <div className="lg:w-1/2">
+            <div className="inline-block px-4 py-2 bg-rose-100 text-rose-600 rounded-full text-xs font-bold uppercase tracking-tighter mb-6">
+              Mobile Connect Feature
+            </div>
+            <h2 className="text-4xl font-black mb-6 leading-tight">
+              Request Resources <br/> from the Network
+            </h2>
+            <p className="text-slate-600 text-lg mb-8">
+              Short on O+ blood or out of ventilators? Send a high-priority request to all hospitals within a 20km radius instantly via the mobile dashboard.
+            </p>
+            
+            <ul className="space-y-4">
+              {['Smart Route Optimization', 'Verified Dispatch Tracking', 'Instant Admin Approval'].map((item, i) => (
+                <li key={i} className="flex items-center gap-3 font-bold text-slate-800">
+                  <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-[10px]">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="lg:w-1/2 w-full">
+             <motion.div 
+               whileHover={{ scale: 1.02 }}
+               className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-100"
+             >
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b pb-4">
+                    <span className="font-black text-xl">Active Requests</span>
+                    <span className="bg-rose-500 text-white px-3 py-1 rounded-full text-xs animate-pulse">4 Priority</span>
+                  </div>
+                  <RequestItem type="Oxygen" qty="10 Cylinders" time="2m ago" urgency="High" />
+                  <RequestItem type="Ventilator" qty="2 Units" time="15m ago" urgency="Critical" />
+                  <RequestItem type="Plasma" qty="B+ Type" time="32m ago" urgency="Normal" />
+                </div>
+             </motion.div>
+          </div>
+        </div>
+      </section>
+
+    
     </div>
   );
 }
+
+// --- HELPER COMPONENTS ---
 
 function StatBox({ number, label }) {
   return (
@@ -106,6 +191,47 @@ function StatBox({ number, label }) {
       <h3 className="text-5xl font-black text-rose-500 mb-2">{number}</h3>
       <p className="text-slate-400 font-bold tracking-widest uppercase text-sm">{label}</p>
     </motion.div>
+  );
+}
+
+function ResourceCard({ icon, title, desc, color }) {
+  const colors = {
+    blue: "bg-blue-50 text-blue-600",
+    rose: "bg-rose-50 text-rose-600",
+    cyan: "bg-cyan-50 text-cyan-600",
+    emerald: "bg-emerald-50 text-emerald-600"
+  };
+
+  return (
+    <motion.div 
+      whileHover={{ y: -10 }}
+      className="p-8 rounded-[32px] bg-white border border-slate-100 shadow-sm hover:shadow-xl transition-all"
+    >
+      <div className={`w-16 h-16 ${colors[color]} rounded-2xl flex items-center justify-center text-3xl mb-6`}>
+        {icon}
+      </div>
+      <h3 className="text-xl font-black mb-3">{title}</h3>
+      <p className="text-slate-500 leading-relaxed text-sm">{desc}</p>
+    </motion.div>
+  );
+}
+
+function RequestItem({ type, qty, time, urgency }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">📦</div>
+        <div>
+          <p className="font-bold text-slate-900 text-sm">{type}: {qty}</p>
+          <p className="text-xs text-slate-400">{time}</p>
+        </div>
+      </div>
+      <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${
+        urgency === 'Critical' ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-600'
+      }`}>
+        {urgency}
+      </span>
+    </div>
   );
 }
 

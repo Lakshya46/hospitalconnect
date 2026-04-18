@@ -1,44 +1,34 @@
+// models/ResourceRequest.js
 import mongoose from "mongoose";
 
 const resourceRequestSchema = new mongoose.Schema({
-
-  
   senderHospitalId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Hospital",
     required: true
   },
-
   receiverHospitalId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Hospital"
+    type: mongoose.Schema.Types.ObjectId, // Null if it's a broadcast
+    ref: "Hospital",
+    default: null
   },
-
-  type: {
-    type: String,
-    enum: ["Blood", "Oxygen", "Bed", "ICU", "Medicine", "Ambulance"],
-    required: true
-  },
-
-  quantity: {
-    type: Number,
-    required: true
-  },
-
+  // 🔥 Support for multiple items in one request
+  items: [{
+    category: { type: String, enum: ["Supplies", "Blood", "Doctor"] },
+    type: { type: String, required: true },
+    quantity: { type: Number, default: 1 }
+  }],
   urgency: {
     type: String,
-    enum: ["Low", "Medium", "High", "Critical"],
+    enum: ["Medium", "High", "Critical"],
     default: "Medium"
   },
-
-  description: String,
-
   status: {
     type: String,
-    enum: ["Pending", "Approved", "Fulfilled", "Rejected"],
+    enum: ["Pending", "Accepted", "Rejected", "Fulfilled"],
     default: "Pending"
-  }
-
+  },
+  isBroadcast: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.model("ResourceRequest", resourceRequestSchema);
