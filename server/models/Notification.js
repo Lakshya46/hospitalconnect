@@ -11,6 +11,16 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Hospital"
   },
+
+ items: [{
+    category: { type: String },
+    type: { type: String },
+    quantity: { type: Number }
+  }],
+  priority: {
+    type: String,
+    enum: ["Low", "Medium", "High", "Critical"]
+  },
   type: {
     type: String,
     enum: ["urgent", "appointment", "system"],

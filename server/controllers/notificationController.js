@@ -4,12 +4,11 @@ import Hospital from "../models/Hospital.js";
 import mongoose from "mongoose";
 
 // @desc    Get notifications based on tab (live vs history)
+// controllers/notificationController.js
+
 export const getNotifications = async (req, res) => {
   try {
     const { tab } = req.query;
-    // Check if req.user exists (Auth middleware check)
-    if (!req.user) return res.status(401).json({ msg: "No user attached to request" });
-
     let query = { recipient: req.user.id };
 
     if (tab === "live") {
@@ -18,22 +17,18 @@ export const getNotifications = async (req, res) => {
       query.status = { $in: ["Accepted", "Rejected"] };
     }
 
+    console.log("Constructed Query:", query); // Debugging line
+
     const notifications = await Notification.find(query)
-      .populate({
-        path: "senderHospital",
-        select: "name", // Only get the name
-        model: Hospital // Explicitly tell Mongoose which model to use
-      })
+      .populate("senderHospital", "name")
       .sort({ createdAt: -1 });
 
     res.json(notifications);
   } catch (err) {
-    // 🔥 This log is critical. Check your terminal after adding this.
-    console.error("❌ Notification Fetch Error:", err); 
-    res.status(500).json({ msg: "Failed to fetch notifications", error: err.message });
+    console.error(err); // Log the actual error
+    res.status(500).json({ msg: "Failed to fetch notifications" });
   }
 };
-
 // @desc    Handle Accept/Reject logic for a specific notification
 export const handleNotificationAction = async (req, res) => {
   const { id } = req.params; // Notification ID

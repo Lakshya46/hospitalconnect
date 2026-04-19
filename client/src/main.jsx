@@ -34,7 +34,8 @@ import PatientAppointments from "./components/patient/Appointments.jsx";
 import Records from "./components/patient/Records.jsx";
 import Profile from "./components/patient/Profile.jsx";
 import BookAppointment from "./components/patient/BookAppointment.jsx";
-import PatientProfileEdit from "./components/patient/ProfileEdit.jsx"; // Renamed alias
+import PatientProfileEdit from "./components/patient/ProfileEdit.jsx";
+import RescheduleAppointment from "./components/patient/RescheduleAppointment.jsx"; // Renamed alias
 /* CSS */
 import "leaflet/dist/leaflet.css";
 import "./index.css";
@@ -93,6 +94,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="records" element={<Records />} />
         <Route path="profile" element={<Profile />} />
          <Route path="profile/edit" element={<PatientProfileEdit />} />
+         <Route path="appointments/reschedule/:id" element={<RescheduleAppointment />} />
         <Route path="hospitals" element={<Hospitals />} />
         <Route path="hospital/:id" element={<HospitalDetail />} />
         <Route path="hospital/:id/appointment" element={<BookAppointment />} />

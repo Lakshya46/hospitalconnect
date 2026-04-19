@@ -1,4 +1,3 @@
-// models/ResourceRequest.js
 import mongoose from "mongoose";
 
 const resourceRequestSchema = new mongoose.Schema({
@@ -14,21 +13,33 @@ const resourceRequestSchema = new mongoose.Schema({
   },
   // 🔥 Support for multiple items in one request
   items: [{
-    category: { type: String, enum: ["Supplies", "Blood", "Doctor"] },
+    category: { 
+      type: String, 
+      enum: ["Supplies", "Blood", "Doctor"],
+      required: true 
+    },
     type: { type: String, required: true },
     quantity: { type: Number, default: 1 }
   }],
   urgency: {
     type: String,
-    enum: ["Medium", "High", "Critical"],
+    // 🔥 Added "Low" to match the frontend selection
+    enum: ["Low", "Medium", "High", "Critical"], 
     default: "Medium"
   },
   status: {
     type: String,
-    enum: ["Pending", "Accepted", "Rejected", "Fulfilled"],
+    // 🔥 Added "Cancelled" to support the Withdraw functionality
+    enum: ["Pending", "Accepted", "Rejected", "Fulfilled", "Cancelled"], 
     default: "Pending"
   },
-  isBroadcast: { type: Boolean, default: false }
+  isBroadcast: { 
+    type: Boolean, 
+    default: false 
+  }
 }, { timestamps: true });
+
+// Indexing for faster status-board queries
+resourceRequestSchema.index({ senderHospitalId: 1, status: 1 });
 
 export default mongoose.model("ResourceRequest", resourceRequestSchema);

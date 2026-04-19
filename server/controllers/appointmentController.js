@@ -58,3 +58,48 @@ export const updateStatus = async (req, res) => {
     res.status(500).json({ msg: "Update failed" });
   }
 };
+
+
+exports.cancelAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Update status to Cancelled
+    appointment.status = "Cancelled";
+    await appointment.save();
+
+    res.status(200).json({ message: "Appointment cancelled successfully", appointment });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// @desc    Reschedule an appointment
+// @route   PATCH /api/appointment/:id/reschedule
+exports.rescheduleAppointment = async (req, res) => {
+  const { date, time } = req.body;
+
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Update fields
+    appointment.date = date;
+    appointment.time = time;
+    appointment.rescheduled = true;
+    appointment.status = "Pending"; // Set back to pending for hospital approval
+
+    await appointment.save();
+
+    res.status(200).json({ message: "Appointment rescheduled successfully", appointment });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};

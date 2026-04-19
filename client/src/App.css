@@ -143,3 +143,5 @@ footer {
   padding: 20px;
   margin-top: 40px;
 }
+
+.animate-spin-slow { animation: spin 8s linear infinite; }
