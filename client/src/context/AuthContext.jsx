@@ -8,8 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ New: refreshUser function to pull fresh data from the server
-  // Wrapped in useCallback so it can be safely used in useEffect dependencies
   const refreshUser = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) return;

@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-
 const SocketContext = createContext();
 
+
+const SOCKET_SERVER_URL = import.meta.env.VITE_API || "http://localhost:5000";
 export const SocketProvider = ({ children, hospitalId }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -11,7 +12,7 @@ export const SocketProvider = ({ children, hospitalId }) => {
     // 1. Establish connection
 const token = localStorage.getItem("token");
     if (!token) return; // 🛑 Don't connect if we don't have a badge!
-    const newSocket = io("http://localhost:5000", {
+    const newSocket = io(SOCKET_SERVER_URL, {
       transports: ["websocket"], // Prioritize websocket for performance
       reconnectionAttempts: 5,
       timeout: 10000,
