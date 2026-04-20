@@ -55,7 +55,7 @@ export default function Resources() {
   if (loading) return <div className="h-screen flex items-center justify-center font-black text-rose-600 animate-pulse">CONNECTING...</div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-0 pt-24 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white p-0 pt-2 max-w-7xl mx-auto">
       
       {/* HEADER */}
       <div className="px-6 md:px-8 mb-10">

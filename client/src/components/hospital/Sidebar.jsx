@@ -2,41 +2,53 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../utils/api";
-
+import { useAuth } from "../../context/AuthContext";
 /* ICONS */
 import {
   MdDashboard, MdEventAvailable, MdVerified, MdInventory2,
   MdBloodtype, MdPeople, MdPersonAdd, MdLogout, MdMenu,
-  MdChevronLeft, MdAccountCircle, MdNotificationsNone, MdArrowForwardIos,
-  MdLocalHospital ,MdRepeat
+  MdChevronLeft, MdNotificationsNone, MdArrowForwardIos,
+  MdLocalHospital, MdRepeat
 } from "react-icons/md";
 
-const DEFAULT_LOGO = "https://img.icons8.com/fluency/200/hospital-room.png";
+const DEFAULT_LOGO = "https://cdn-icons-png.flaticon.com/512/2966/2966327.png";
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [hospital, setHospital] = useState(null);
+  
+  // 1. Get user from AuthContext (triggers re-run on refreshUser)
+  const { user , logout} = useAuth(); 
+  const [hospitalProfile, setHospitalProfile] = useState(null);
 
+  // 2. Fetch specific hospital branding data
   useEffect(() => {
-    const fetchHospital = async () => {
+    const getHospitalProfile = async () => {
       try {
         const res = await api.get("/api/hospital/me");
-        setHospital(res.data);
+        setHospitalProfile(res.data);
       } catch (err) {
-        console.error("Sidebar Data Error:", err);
+        console.error("Sidebar: Error fetching hospital profile", err);
       }
     };
-    fetchHospital();
-  }, []);
+    
+    if (user?.role === 'hospital') {
+      getHospitalProfile();
+    }
+  }, [user]); // ✅ Dependency on 'user' ensures this re-runs after refreshUser()
 
   const menu = [
     { name: "Dashboard", path: "/hospital-admin/dashboard", icon: <MdDashboard /> },
     { name: "Hospitals", path: "/hospital-admin/hospitals", icon: <MdVerified /> },
-   { 
+    { 
       name: "Resource Request", 
       path: "/hospital-admin/resource-request", 
-      icon: <div className="relative"><MdRepeat /><span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-600 rounded-full animate-pulse border-2 border-white"></span></div> 
+      icon: (
+        <div className="relative">
+          <MdRepeat />
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-600 rounded-full animate-pulse border-2 border-white"></span>
+        </div>
+      ) 
     },
     { name: "Appointments", path: "/hospital-admin/appointments", icon: <MdEventAvailable /> },
     { name: "Resources", path: "/hospital-admin/resources", icon: <MdInventory2 /> },
@@ -47,7 +59,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   ];
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout(); // Use the logout function from context
     navigate("/login");
   };
 
@@ -57,7 +69,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="fixed top-0 left-0 h-screen bg-white text-slate-600 z-[100] flex flex-col justify-between border-r border-slate-100 shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
     >
-      {/* 1. TOP HEADER (Brand & Toggle) */}
+      {/* 1. TOP HEADER */}
       <div className={`h-16 flex items-center px-4 ${collapsed ? 'justify-center' : 'justify-between'} border-b border-slate-50`}>
         {!collapsed && (
           <motion.div 
@@ -121,17 +133,16 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         </nav>
       </div>
 
-      {/* 3. FOOTER (Hospital Logo Anchor) */}
+      {/* 3. FOOTER (Branding Section) */}
       <div className="p-4 bg-slate-50/50 border-t border-slate-100 mt-auto space-y-2">
-        {hospital && (
+        {hospitalProfile && (
           <Link 
             to="/hospital-admin/profile"
             className={`flex items-center gap-3 p-2.5 rounded-2xl bg-white border border-slate-200/60 shadow-sm hover:shadow-md hover:border-rose-200 transition-all group overflow-hidden ${collapsed ? 'justify-center' : ''}`}
           >
-            {/* Hospital Logo Image ONLY here at the bottom */}
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center flex-shrink-0 border border-slate-100 overflow-hidden shadow-inner">
               <img 
-                src={hospital.image || DEFAULT_LOGO} 
+                src={hospitalProfile.image || DEFAULT_LOGO} 
                 className="w-full h-full object-cover" 
                 alt="hospital logo"
                 onError={(e) => e.target.src = DEFAULT_LOGO}
@@ -144,7 +155,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 className="flex-1 min-w-0"
               >
                 <p className="text-xs font-black text-slate-800 truncate leading-none mb-1">
-                  {hospital.name || "Administrator"}
+                  {hospitalProfile.name || "Administrator"}
                 </p>
                 <p className="text-[10px] font-bold text-rose-600 truncate uppercase tracking-tighter">
                   Manage Account

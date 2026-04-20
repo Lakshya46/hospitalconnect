@@ -234,7 +234,7 @@ export default function BookAppointment() {
               <button
                 type="submit"
                 disabled={submitting || !selectedDoctor || !date || !time}
-                className="w-full py-5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-100 disabled:text-slate-400 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                className="w-full py-5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-100 disabled:text-slate-400 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-[0.98] text-white disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

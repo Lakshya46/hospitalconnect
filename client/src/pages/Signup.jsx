@@ -55,11 +55,15 @@ export default function Signup() {
       }
 
       const res = await axios.post(`${API}/api/auth/signup`, payload);
-      localStorage.setItem("token", res.data.token);
-
+      
+      // We usually redirect to login after signup to ensure the user 
+      // goes through the full AuthContext flow, or you can log them in directly.
       if (role === "hospital") {
+        // Local storage set here allows the profile edit page to access the token
+        localStorage.setItem("token", res.data.token);
         navigate("/hospital-admin/profile/edit");
       } else {
+        alert("Registration successful! Please log in.");
         navigate("/login");
       }
     } catch (err) {
@@ -88,9 +92,9 @@ export default function Signup() {
           <p className="text-slate-500 font-medium mt-2">Join the interconnected healthcare network</p>
         </div>
 
-        {/* ROLE SELECTOR */}
+        {/* ROLE SELECTOR - Admin Removed */}
         <div className="flex mb-8 bg-slate-100 rounded-2xl p-1.5 relative">
-          {["patient", "hospital", "admin"].map((r) => (
+          {["patient", "hospital"].map((r) => (
             <button
               key={r}
               type="button"
@@ -127,7 +131,7 @@ export default function Signup() {
           </div>
 
           {/* HOSPITAL SPECIFIC FIELDS */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {role === "hospital" && (
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
@@ -168,7 +172,6 @@ export default function Signup() {
   );
 }
 
-// Reusable Input Component for cleaner code
 function FormInput({ icon, ...props }) {
   return (
     <div className="relative">

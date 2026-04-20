@@ -2,37 +2,37 @@ import Notification from "../models/Notification.js";
 import ResourceRequest from "../models/ResourceRequest.js";
 import Hospital from "../models/Hospital.js";
 import mongoose from "mongoose";
+import { getIO } from "../config/socket.js";
 
 // @desc    Get notifications based on tab (live vs history)
-// controllers/notificationController.js
-
 export const getNotifications = async (req, res) => {
   try {
     const { tab } = req.query;
     let query = { recipient: req.user.id };
 
     if (tab === "live") {
+      // ✅ Now including 'Pending' only. 'Cancelled' requests shouldn't show in Live.
       query.status = "Pending";
     } else {
-      query.status = { $in: ["Accepted", "Rejected"] };
+      // ✅ History now includes Accepted, Rejected, and Cancelled (Withdrawn)
+      query.status = { $in: ["Accepted", "Rejected", "Cancelled"] };
     }
 
-    console.log("Constructed Query:", query); // Debugging line
-
     const notifications = await Notification.find(query)
-      .populate("senderHospital", "name")
+      .populate("senderHospital", "name _id")
       .sort({ createdAt: -1 });
 
     res.json(notifications);
   } catch (err) {
-    console.error(err); // Log the actual error
+    console.error(err);
     res.status(500).json({ msg: "Failed to fetch notifications" });
   }
 };
+
 // @desc    Handle Accept/Reject logic for a specific notification
 export const handleNotificationAction = async (req, res) => {
-  const { id } = req.params; // Notification ID
-  const { action } = req.body; // "Accepted" or "Rejected"
+  const { id } = req.params; 
+  const { action } = req.body; 
   
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -41,22 +41,31 @@ export const handleNotificationAction = async (req, res) => {
     const notification = await Notification.findById(id).session(session);
     if (!notification) throw new Error("Notification not found");
 
+    // 🔥 CHECK: If the request was already cancelled by the sender
+    if (notification.status === "Cancelled") {
+      throw new Error("This request has been withdrawn by the sender.");
+    }
+
     const request = await ResourceRequest.findById(notification.requestId).session(session);
     if (!request) throw new Error("Linked Resource Request not found");
 
-    // 1. If Accepted, Deduct Inventory
-    if (action === "Accepted") {
-      const provider = await Hospital.findOne({ userId: req.user.id }).session(session);
-      if (!provider) throw new Error("Hospital profile not found");
+    const provider = await Hospital.findOne({ userId: req.user.id }).session(session);
+    if (!provider) throw new Error("Hospital profile not found");
 
+    if (action === "Accepted") {
+      // ... (Deduction Logic remains the same)
       for (const item of request.items) {
         if (item.category === "Supplies") {
-          const key = item.type === "Oxygen" ? "oxygen" : "icu";
-          if (provider[key].available < item.quantity) throw new Error(`Insufficient ${item.type}`);
+          let key = item.type === "Oxygen" ? "oxygen" : item.type === "ICU Bed" ? "icu" : "beds";
+          if (!provider[key] || provider[key].available < item.quantity) {
+            throw new Error(`Insufficient ${item.type} available`);
+          }
           provider[key].available -= item.quantity;
         } else if (item.category === "Blood") {
           const bloodKey = item.type.replace("+", "_pos").replace("-", "_neg");
-          if (provider.bloodBank[bloodKey] < item.quantity) throw new Error(`Insufficient ${item.type} Blood`);
+          if (!provider.bloodBank[bloodKey] || provider.bloodBank[bloodKey] < item.quantity) {
+            throw new Error(`Insufficient ${item.type} Blood stock`);
+          }
           provider.bloodBank[bloodKey] -= item.quantity;
         }
       }
@@ -64,10 +73,11 @@ export const handleNotificationAction = async (req, res) => {
       request.status = "Accepted";
       request.receiverHospitalId = provider._id;
     } else {
-      request.status = "Rejected";
+      if (!request.isBroadcast) {
+        request.status = "Rejected";
+      }
     }
 
-    // 2. Update Notification Status
     notification.status = action;
     notification.read = true;
     
@@ -75,6 +85,25 @@ export const handleNotificationAction = async (req, res) => {
     await request.save({ session });
 
     await session.commitTransaction();
+
+    const io = getIO();
+    // A. Notify SENDER
+    io.to(request.senderHospitalId.toString()).emit("request_status_updated", {
+      requestId: request._id,
+      status: action,
+      receiverHospital: { _id: provider._id, name: provider.name }
+    });
+
+    // B. If Accepted, Update PROVIDER'S local UI
+    if (action === "Accepted") {
+      io.to(provider._id.toString()).emit("resource_update", {
+        beds: provider.beds,
+        icu: provider.icu,
+        oxygen: provider.oxygen,
+        bloodBank: provider.bloodBank
+      });
+    }
+
     res.json({ msg: `Request ${action}`, notification });
   } catch (err) {
     await session.abortTransaction();

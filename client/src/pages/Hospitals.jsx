@@ -8,6 +8,7 @@ import {
 } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import { useAuth } from "../context/AuthContext"; 
 
 // --- CUSTOM MARKER ICONS ---
 const userIcon = new L.Icon({
@@ -20,7 +21,6 @@ const hospitalIcon = new L.Icon({
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34]
 });
 
-// Full Filter List from Schema
 const hospitalTypes = [
   "General Hospital", "Multi-Specialty", "Super-Specialty",
   "Cardiac Center", "Cancer / Oncology", "Pediatric (Children)",
@@ -29,6 +29,19 @@ const hospitalTypes = [
   "Psychiatric / Mental Health", "Trauma & Emergency", "Ayurvedic / Homeopathy",
   "Diagnostic Center", "Rehabilitation Center"
 ];
+
+// --- UTILS: HAVERSINE DISTANCE CALCULATION ---
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Earth's radius in KM
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; 
+};
 
 function MapFloatingBtn({ setUserLocation, map }) {
   const handleLocate = (e) => {
@@ -61,7 +74,7 @@ export default function Hospitals() {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const { user } = useAuth(); 
   const role = user?.role;
 
   useEffect(() => {
@@ -78,13 +91,32 @@ export default function Hospitals() {
     fetchHospitals();
   }, []);
 
+  // ✅ DISTANCE-AWARE FILTERING & SORTING
   const filteredHospitals = useMemo(() => {
-    return hospitals.filter(h =>
+    let list = hospitals.filter(h =>
       (h.name?.toLowerCase().includes(search.toLowerCase()) || 
        h.location?.toLowerCase().includes(search.toLowerCase())) &&
       (selectedTypes.length === 0 || h.type?.some(t => selectedTypes.includes(t)))
     );
-  }, [hospitals, search, selectedTypes]);
+
+    if (userLocation) {
+      list = list.map(h => ({
+        ...h,
+        distance: calculateDistance(userLocation[0], userLocation[1], h.position[0], h.position[1])
+      })).sort((a, b) => a.distance - b.distance);
+    }
+
+    return list;
+  }, [hospitals, search, selectedTypes, userLocation]);
+
+  const handleHospitalClick = (id) => {
+    if (!role) {
+      navigate(`/hospital/${id}`);
+    } else {
+      const prefix = role === "hospital" ? "hospital-admin" : "patient";
+      navigate(`/${prefix}/hospital/${id}`);
+    }
+  };
 
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-white">
@@ -93,13 +125,12 @@ export default function Hospitals() {
   );
 
   return (
-    <div className="flex h-screen bg-[#FDFEFF] pt-2overflow-hidden">
+    <div className="flex h-screen bg-[#FDFEFF] pt-1 overflow-hidden">
       
       {/* 1. LEFT SEARCH & CARDS PANE */}
       <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-white">
         
-        {/* HEADER SECTION */}
-        <div className="p-6 sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-50">
+        <div className="p-3 sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-50">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <MdLocalHospital className="text-rose-600" /> Medical Network
@@ -109,7 +140,7 @@ export default function Hospitals() {
             </div>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="relative group">
               <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
               <input
@@ -138,8 +169,8 @@ export default function Hospitals() {
           </div>
         </div>
 
-        {/* 2. MAP ZONE (Inline) */}
-        <div className="px-6 mt-6">
+        {/* 2. MAP ZONE */}
+        <div className="px-5 mt-3">
           <div className="relative h-64 w-full rounded-3xl overflow-hidden shadow-sm border border-slate-100">
             <MapContainer center={[23.2599, 77.4126]} zoom={13} className="h-full w-full" ref={setMap}>
               <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png" />
@@ -160,7 +191,7 @@ export default function Hospitals() {
         <div className="p-6 pb-20">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Verified Centers</h2>
-            <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">{filteredHospitals.length} Result</span>
+            <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">{filteredHospitals.length} Results</span>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -169,29 +200,20 @@ export default function Hospitals() {
                 <motion.div
                   layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   key={h._id}
-                  onClick={() => {
-  if (!role) {
-    // PUBLIC ROUTE (No prefix)
-    navigate(`/hospital/${h._id}`);
-  } else {
-    // AUTHENTICATED ROUTES
-    const prefix = role === "hospital" ? "hospital-admin" : "patient";
-    navigate(`/${prefix}/hospital/${h._id}`);
-  }
-}}
+                  onClick={() => handleHospitalClick(h._id)} 
                   className="group bg-white p-5 rounded-3xl border border-slate-100 hover:border-rose-200 hover:shadow-xl hover:shadow-rose-900/5 transition-all cursor-pointer relative overflow-hidden"
                 >
-                  {/* Status & Rating Row */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-wrap gap-1">
                         {h.type?.slice(0, 2).map(t => (
                             <span key={t} className="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">{t}</span>
                         ))}
                     </div>
-                    <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-lg">
-                        <MdStar size={12} />
-                        <span className="text-[10px] font-bold">4.8</span>
-                    </div>
+                    {h.distance && (
+                      <div className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">
+                        {h.distance.toFixed(1)} KM
+                      </div>
+                    )}
                   </div>
 
                   <h3 className="font-bold text-slate-800 group-hover:text-rose-600 transition-colors mb-1 truncate">{h.name}</h3>
@@ -230,32 +252,45 @@ export default function Hospitals() {
         </div>
       </div>
 
-      {/* 4. RIGHT SIDEBAR: AI RECOMMENDATIONS */}
+      {/* 4. RIGHT SIDEBAR: PRIORITY CENTERS WITH DISTANCE */}
       <div className="w-[380px] bg-slate-50/50 border-l border-slate-100 hidden lg:flex flex-col">
         <div className="p-6 bg-white border-b border-slate-100">
           <h2 className="text-lg font-black text-slate-900 tracking-tight">Priority Centers</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Nearest to your location</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+            {userLocation ? "Nearest to your current location" : "Enable location to see distance"}
+          </p>
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-          {filteredHospitals.slice(0, 5).map((h, i) => (
+          {filteredHospitals.slice(0, 6).map((h, i) => (
             <motion.div
               whileHover={{ scale: 1.02, x: 5 }}
               key={h._id}
-              onClick={() => map?.flyTo(h.position, 15)}
+              onClick={() => {
+                map?.flyTo(h.position, 15);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               className="p-4 rounded-2xl bg-white border border-slate-100 hover:border-rose-200 shadow-sm transition-all cursor-pointer group"
             >
               <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 font-black shrink-0">
-                    {i + 1}
+                <div className="w-12 h-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center text-rose-600 shrink-0 border border-rose-100">
+                    {h.distance ? (
+                      <>
+                        <span className="text-[10px] font-black leading-none">{h.distance.toFixed(1)}</span>
+                        <span className="text-[7px] font-black uppercase">KM</span>
+                      </>
+                    ) : (
+                      <span className="font-black"># {i + 1}</span>
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-slate-800 text-xs truncate group-hover:text-rose-600">{h.name}</h4>
                     <div className="flex items-center gap-3 mt-1">
                         <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                            <MdDirectionsBus size={12} className="text-rose-400" /> 12 mins
+                            <MdDirectionsBus size={12} className="text-rose-400" /> 
+                            {h.distance ? `${Math.round(h.distance * 2.5)} mins` : "Varies"}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 hover:text-emerald-500">
                             <MdCall size={12} className="text-emerald-400" /> Call
                         </span>
                     </div>
@@ -263,14 +298,6 @@ export default function Hospitals() {
               </div>
             </motion.div>
           ))}
-          
-          <div className="mt-6 p-5 bg-rose-600 rounded-3xl text-white shadow-xl shadow-rose-200">
-             <h4 className="font-black text-sm mb-1 uppercase tracking-widest">Emergency?</h4>
-             <p className="text-[10px] opacity-80 leading-relaxed font-bold">Click below to alert the nearest ambulance service and broadcast your GPS coordinates.</p>
-             <button className="w-full mt-4 py-3 bg-white text-rose-600 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-colors">
-                SOS Broadcast
-             </button>
-          </div>
         </div>
       </div>
 

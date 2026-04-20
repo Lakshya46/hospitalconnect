@@ -8,6 +8,7 @@ import {
   MdVerifiedUser, MdPhoneInTalk, MdDescription, MdEmail, MdPlace
 } from "react-icons/md";
 import api from "../../utils/api";
+import { useAuth } from "../../context/AuthContext"; // ✅ Global Auth Sync
 
 const HOSPITAL_CATEGORIES = [
   "General Hospital", "Multi-Specialty", "Super-Specialty",
@@ -34,6 +35,7 @@ function MapUpdater({ coordinates }) {
 export default function ProfileEdit() {
   const navigate = useNavigate();
   const markerRef = useRef(null);
+  const { refreshUser } = useAuth(); // ✅ Extract refresh trigger
   
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -124,6 +126,8 @@ export default function ProfileEdit() {
 
     try {
       const formData = new FormData();
+      
+      // Construct Payload
       Object.keys(form).forEach(key => {
         if (key === "coordinates") {
           formData.append(key, JSON.stringify({
@@ -140,20 +144,29 @@ export default function ProfileEdit() {
       if (selectedFiles.image) formData.append("image", selectedFiles.image);
       if (selectedFiles.coverPhoto) formData.append("coverPhoto", selectedFiles.coverPhoto);
 
+      // 1. Update Database
       await api.put("/api/hospital/update", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
+      // 2. 🔥 RE-SYNC GLOBAL STATE (Update Sidebar/Navbar Logo & Name)
+      await refreshUser();
+
       alert("Facility records updated successfully.");
       navigate("/hospital-admin/profile");
     } catch (err) {
-      alert("Update failed. Please verify file sizes.");
+      console.error("Update Error:", err);
+      alert("Update failed. Please check connection or file sizes.");
     } finally {
       setUploading(false);
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black text-rose-600 animate-pulse uppercase tracking-widest italic">Syncing Facility...</div>;
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center font-black text-rose-600 animate-pulse uppercase tracking-widest italic">
+      Syncing Facility...
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#FDFDFF] p-4 md:p-8 pt-24 max-w-7xl mx-auto">
@@ -166,7 +179,7 @@ export default function ProfileEdit() {
           </h1>
           <p className="text-slate-500 font-bold text-[10px] mt-2 uppercase tracking-[0.2em]">Medical Registry Management</p>
         </div>
-        <button onClick={() => navigate(-1)} className="group flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-xs text-slate-400 hover:text-rose-600 hover:border-rose-100 transition-all shadow-sm">
+        <button type="button" onClick={() => navigate(-1)} className="group flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-xs text-slate-400 hover:text-rose-600 hover:border-rose-100 transition-all shadow-sm">
           <MdArrowBack className="group-hover:-translate-x-1 transition-transform" /> Discard
         </button>
       </div>
@@ -219,12 +232,12 @@ export default function ProfileEdit() {
             <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Official Name</label>
-                    <input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700" required />
+                    <input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700 outline-rose-100" required />
                 </div>
                 <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Specialization Tags</label>
                     <div className="relative">
-                        <select onChange={(e) => { if(e.target.value) toggleCategory(e.target.value); e.target.value = ""; }} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-400 appearance-none cursor-pointer">
+                        <select onChange={(e) => { if(e.target.value) toggleCategory(e.target.value); e.target.value = ""; }} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-400 appearance-none cursor-pointer outline-rose-100">
                             <option value="">+ Add Specialization</option>
                             {HOSPITAL_CATEGORIES.map(cat => (<option key={cat} value={cat} disabled={form.type.includes(cat)} className="text-slate-700">{cat}</option>))}
                         </select>
@@ -243,7 +256,6 @@ export default function ProfileEdit() {
                 </AnimatePresence>
             </div>
 
-            {/* NEW: PHYSICAL ADDRESS FIELD */}
             <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
                     <MdPlace size={12} /> Physical Address / Location
@@ -252,22 +264,21 @@ export default function ProfileEdit() {
                   value={form.location} 
                   onChange={(e) => setForm({...form, location: e.target.value})} 
                   placeholder="Enter full hospital address..."
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700" 
+                  className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700 outline-rose-100" 
                 />
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><MdVerifiedUser size={12} /> Medical Accreditation No.</label>
-                <input value={form.licenseNumber} onChange={(e) => setForm({...form, licenseNumber: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold" required />
+                <input value={form.licenseNumber} onChange={(e) => setForm({...form, licenseNumber: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold outline-rose-100" required />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><MdPhoneInTalk size={12} /> Emergency Helpline</label>
-                <input value={form.contact} onChange={(e) => setForm({...form, contact: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-rose-600" />
+                <input value={form.contact} onChange={(e) => setForm({...form, contact: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-rose-600 outline-rose-100" />
               </div>
             </div>
 
-            {/* NEW: REGISTERED EMAIL FIELD */}
             <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1">
                     <MdEmail size={12} /> Registered Facility Email
@@ -277,18 +288,18 @@ export default function ProfileEdit() {
                   value={form.email} 
                   onChange={(e) => setForm({...form, email: e.target.value})} 
                   placeholder="admin@hospital.com"
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700" 
+                  className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-700 outline-rose-100" 
                 />
             </div>
 
             <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-1"><MdDescription size={12} /> Public Biography</label>
-                <textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-medium text-slate-500 h-36 leading-relaxed" placeholder="Describe clinical expertise..." />
+                <textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none font-medium text-slate-500 h-36 leading-relaxed outline-rose-100" placeholder="Describe clinical expertise..." />
             </div>
           </section>
         </div>
 
-        {/* GEO-LOCATION (Theme Aligned) */}
+        {/* GEO-LOCATION */}
         <aside className="space-y-8">
           <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-xl shadow-rose-100/20 space-y-8 sticky top-24">
             <header className="space-y-2">
@@ -298,7 +309,7 @@ export default function ProfileEdit() {
 
             <div className="relative group">
               <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-rose-500 transition-colors" size={20} />
-              <input placeholder="Search district or area..." onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSearch(e.target.value))} className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-3xl text-sm text-slate-700 focus:border-rose-100 focus:bg-white focus:ring-0 font-bold placeholder:text-slate-400 transition-all" />
+              <input placeholder="Search district or area..." onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSearch(e.target.value))} className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-3xl text-sm text-slate-700 focus:border-rose-100 focus:bg-white focus:ring-0 font-bold placeholder:text-slate-400 transition-all outline-none" />
             </div>
             
             <div className="h-[340px] w-full rounded-[40px] overflow-hidden border-4 border-slate-50 relative shadow-inner ring-1 ring-rose-50">

@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Zap, Activity, CheckCircle2, Clock, Package, 
   MapPin, AlertCircle, Phone, Plus, Building2, Trash2, UserPlus, 
-  Droplet, Box, ArrowRight, Share2, Loader2, Bed, Flame, XCircle
+  Droplet, Box, ArrowRight, Share2, Loader2, Bed, Flame, XCircle, Search
 } from "lucide-react";
 import api from "../../utils/api";
+import { useSocket } from "../../context/SocketContext";
 
 export default function ResourceRequest() {
   const [panel, setPanel] = useState("request"); 
@@ -15,6 +16,7 @@ export default function ResourceRequest() {
   const [myRequests, setMyRequests] = useState([]);
   const [discoveredHospitals, setDiscoveredHospitals] = useState([]);
   
+const { socket } = useSocket(); // ✅ This grabs the actual socket instance
   const [currentItem, setCurrentItem] = useState({
     category: "Supplies",
     type: "Oxygen",
@@ -47,6 +49,40 @@ export default function ResourceRequest() {
   useEffect(() => {
     if (panel === "updates") fetchStatusBoard();
   }, [panel, fetchStatusBoard]);
+
+  // 🔥 REAL-TIME SOCKET LISTENER
+// 1. Update the Socket Listener to match your UI structure
+useEffect(() => {
+  if (!socket) return;
+
+  socket.on("request_status_updated", (data) => {
+    // data = { requestId, status, receiverHospital: { _id, name } }
+    setMyRequests((prev) => 
+      prev.map((req) => 
+        req._id === data.requestId 
+          ? { 
+              ...req, 
+              status: data.status, 
+              // Ensure this key matches exactly what your JSX (req.receiverHospitalId?.name) uses
+              receiverHospitalId: data.receiverHospital 
+            } 
+          : req
+      )
+    );
+  });
+
+  return () => socket.off("request_status_updated");
+}, [socket]);
+
+// 2. Prevent the API from overwriting fresh socket data
+useEffect(() => {
+  // Only fetch if we don't have requests yet or if explicitly switching to the tab
+  // This prevents the "Race Condition" where the API overwrites the Socket
+  if (panel === "updates" && myRequests.length === 0) {
+    fetchStatusBoard();
+  }
+}, [panel, fetchStatusBoard, myRequests.length]);
+
 
   const addItemToRequest = () => {
     const finalItem = { 
@@ -117,7 +153,7 @@ export default function ResourceRequest() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 px-4 pt-8 text-slate-700">
+    <div className="max-w-7xl mx-auto pb-20 px-4 pt-8 text-slate-700 font-sans">
       
       {/* 1. TOP PANEL SWITCHER */}
       <div className="flex gap-4 mb-12 bg-slate-100 p-2 rounded-[2rem] w-fit mx-auto border border-slate-200 shadow-inner">
@@ -125,7 +161,7 @@ export default function ResourceRequest() {
           onClick={() => { 
             setPanel("request"); 
             setStep(1); 
-            setRequestList([]); // 🔥 Resets bundle on click
+            setRequestList([]); 
           }} 
           className={`flex items-center gap-3 px-10 py-3.5 rounded-2xl text-[13px] font-black uppercase transition-all ${panel === "request" ? "bg-white text-rose-600 shadow-md" : "text-slate-500 hover:text-slate-800"}`}
         >
@@ -142,28 +178,23 @@ export default function ResourceRequest() {
       <AnimatePresence mode="wait">
         {panel === "request" ? (
           <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            
-            {/* STEP 1: BUNDLE BUILDER */}
             {step === 1 && (
               <div className="grid lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-5 space-y-8">
                   <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
                     <h3 className="text-2xl font-black text-slate-900 mb-8 italic">Requirement <span className="text-rose-600">Entry</span></h3>
-                    
                     <div className="space-y-6">
                       <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                         {Object.keys(categories).map(cat => (
                           <button key={cat} onClick={() => setCurrentItem({...currentItem, category: cat, type: categories[cat][0]})} className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase transition-all ${currentItem.category === cat ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}>{cat}</button>
                         ))}
                       </div>
-                      
                       <div className="space-y-2">
                         <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Select {currentItem.category}</label>
                         <select className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-base appearance-none" value={currentItem.type} onChange={(e) => setCurrentItem({...currentItem, type: e.target.value})}>
                           {categories[currentItem.category].map(opt => <option key={opt}>{opt}</option>)}
                         </select>
                       </div>
-
                       <div className="space-y-3">
                         <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Urgency Level</label>
                         <div className="grid grid-cols-4 gap-3">
@@ -174,7 +205,6 @@ export default function ResourceRequest() {
                           ))}
                         </div>
                       </div>
-
                       <div className="flex gap-4 pt-4">
                         {currentItem.category !== "Doctor" && (
                           <div className="flex-1 space-y-2">
@@ -195,7 +225,6 @@ export default function ResourceRequest() {
                     <p className="text-slate-400 text-xs leading-relaxed font-medium">Critical requests trigger real-time alerts across the regional hospital network.</p>
                   </div>
                 </div>
-
                 <div className="lg:col-span-7">
                   <div className="bg-white min-h-[520px] rounded-[3.5rem] border border-slate-100 shadow-sm p-10 flex flex-col">
                     <h2 className="text-3xl font-black text-slate-900 mb-8 italic tracking-tight">Request <span className="text-rose-600">Bundle</span></h2>
@@ -221,8 +250,8 @@ export default function ResourceRequest() {
                         </div>
                       )) : (
                         <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-6 opacity-50">
-                           <Package size={64} strokeWidth={1}/>
-                           <p className="font-black uppercase text-[11px] tracking-[0.25em]">Bundle is currently empty</p>
+                            <Package size={64} strokeWidth={1}/>
+                            <p className="font-black uppercase text-[11px] tracking-[0.25em]">Bundle is currently empty</p>
                         </div>
                       )}
                     </div>
@@ -235,12 +264,10 @@ export default function ResourceRequest() {
                 </div>
               </div>
             )}
-
-            {/* STEP 2: DISCOVERY */}
             {step === 2 && (
               <div className="space-y-8">
                 <div className="flex flex-col md:flex-row justify-between items-center bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm gap-6">
-                   <div>
+                  <div>
                     <h2 className="text-3xl font-black text-slate-900 italic">Discovered <span className="text-rose-600">Providers</span></h2>
                     <p className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mt-1">Scan Complete • Matches found for: {requestList[0]?.type}</p>
                   </div>
@@ -248,7 +275,6 @@ export default function ResourceRequest() {
                     {loading ? <Loader2 className="animate-spin"/> : <Share2 size={20}/>} Network Broadcast
                   </button>
                 </div>
-
                 <div className="grid lg:grid-cols-2 gap-6">
                   {discoveredHospitals.length > 0 ? discoveredHospitals.map((hosp) => (
                     <motion.div whileHover={{ y: -5 }} key={hosp._id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-center gap-8 group hover:border-rose-300 transition-all">
@@ -274,8 +300,6 @@ export default function ResourceRequest() {
             )}
           </motion.div>
         ) : (
-          
-          /* PANEL: STATUS BOARD / PIPELINE */
           <motion.div key="updates" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 border-l-[6px] border-rose-500">
@@ -322,13 +346,8 @@ export default function ResourceRequest() {
                             <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border ${req.status === 'Accepted' ? 'text-emerald-500 bg-emerald-50 border-emerald-100' : req.status === 'Cancelled' ? 'text-slate-400 bg-slate-50 border-slate-200' : 'text-amber-500 bg-amber-50 border-amber-100'}`}>{req.status}</div>
                           </div>
                         </div>
-
-                        {/* 🔥 CANCEL BUTTON */}
                         {req.status === 'Pending' && (
-                          <button 
-                            onClick={() => handleCancelRequest(req._id)}
-                            className="flex items-center gap-2 text-rose-500 hover:text-rose-700 text-[11px] font-black uppercase tracking-widest transition-colors py-1 px-2 hover:bg-rose-50 rounded-lg"
-                          >
+                          <button onClick={() => handleCancelRequest(req._id)} className="flex items-center gap-2 text-rose-500 hover:text-rose-700 text-[11px] font-black uppercase tracking-widest transition-colors py-1 px-2 hover:bg-rose-50 rounded-lg">
                             <XCircle size={15} /> Withdraw
                           </button>
                         )}
@@ -356,7 +375,6 @@ export default function ResourceRequest() {
   );
 }
 
-// Visual Helper for Urgency Colors
 function getUrgencyColor(level) {
   switch (level) {
     case "Low": return "bg-slate-100 text-slate-500 border-slate-200";

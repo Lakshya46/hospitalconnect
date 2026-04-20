@@ -3,12 +3,16 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import dns from "dns";
+import http from "http"; // 1. Import HTTP
+import { initSocket } from "./config/socket.js"; // Your socket config
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
-
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app); // 2. Create the HTTP server wrapper
+
+
 
 // ✅ CORS
 app.use(cors({
@@ -17,6 +21,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// 3. Initialize Socket.io with the server wrapper
+initSocket(server);
 
 // ✅ HEALTH CHECK
 app.get("/", (req, res) => {
@@ -40,16 +47,15 @@ app.use("/api/auth", authRoutes);
 app.use("/api/hospital", hospitalRoutes);
 app.use("/api/appointment", appointmentRoutes);
 app.use("/api/resources", resourceRoutes);
-app.use("/api/requests", requestRoutes); // For resource requests
-app.use("/api/notifications", notificationRoutes); // For notifications
+app.use("/api/requests", requestRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/patient", patientRoutes);
-// ✅ ENV CHECK
 
+// ✅ DB CONNECT
 if (!process.env.MONGO_URI) {
   throw new Error("MONGO_URI missing in .env");
 }
 
-// ✅ DB CONNECT
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => {
@@ -69,6 +75,7 @@ app.use((err, req, res, next) => {
 // ✅ SERVER START
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// 4. 🔥 CRITICAL: Listen using 'server', NOT 'app'
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

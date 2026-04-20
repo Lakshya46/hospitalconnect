@@ -6,34 +6,31 @@ import {
   Award, Clock, CheckCircle2, AlertCircle
 } from "lucide-react";
 import api from "../utils/api";
+import { useAuth } from "../context/AuthContext"; // ✅ Use your global auth context
 
 export default function HospitalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ✅ Get user and loading state from context
+  const { user, loading: authLoading } = useAuth();
+  
   const [hospital, setHospital] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  // Derived role for easier readability
   const role = user?.role;
-  const isPatientPanel = location.pathname.startsWith("/patient");
-  const isHospitalPanel = location.pathname.startsWith("/hospital-admin");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch Hospital Details
         const hRes = await api.get(`/api/hospital/by-id/${id}`);
-        
         setHospital(hRes.data);
 
-        // 2. Fetch Doctors linked to this Hospital ID
-        // Note: Ensure your backend has this route implemented
-// Inside useEffect in HospitalDetail.js
-const dRes = await api.get(`/api/hospital/doctors/${id}`); // Ensure this path matches the backend route
-setDoctors(dRes.data);
+        const dRes = await api.get(`/api/hospital/doctors/${id}`);
+        setDoctors(dRes.data);
       } catch (err) {
         console.error("Fetch Error:", err);
       } finally {
@@ -53,8 +50,9 @@ setDoctors(dRes.data);
 
   if (!hospital) return <div className="p-12 text-center font-bold">Hospital not found</div>;
 
-  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hospital.address || hospital.location)}`;
-
+  const googleMapsUrl = hospital.coordinates?.coordinates
+  ? `https://www.google.com/maps/dir/?api=1&destination=${hospital.coordinates.coordinates[1]},${hospital.coordinates.coordinates[0]}`
+  : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hospital.address || hospital.location)}`;
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans">
       
@@ -97,9 +95,7 @@ setDoctors(dRes.data);
       <main className="max-w-6xl mx-auto px-6 mt-16">
         <div className="grid lg:grid-cols-3 gap-8">
           
-          {/* 🏥 LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-10">
-            
             <section>
               <div className="flex items-center gap-2 mb-2">
                 <h1 className="text-4xl font-black text-slate-900">{hospital.name}</h1>
@@ -122,23 +118,20 @@ setDoctors(dRes.data);
                 </a>
               </div>
 
-              {/* Description Section */}
               <div className="mt-8 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-800 mb-2">About this Facility</h3>
                 <p className="text-slate-600 leading-relaxed text-sm">
-                  {hospital.description || "Providing comprehensive healthcare services. This facility is equipped with modern medical technology and a professional team dedicated to patient recovery and wellness."}
+                  {hospital.description || "Providing comprehensive healthcare services. This facility is equipped with modern medical technology."}
                 </p>
               </div>
             </section>
 
             {/* 🧑‍⚕️ DOCTORS SECTION */}
             <section>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <Stethoscope className="text-rose-500" />
-                  Available Specialists
-                </h3>
-              </div>
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 mb-6">
+                <Stethoscope className="text-rose-500" />
+                Available Specialists
+              </h3>
               
               {doctors.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -155,9 +148,6 @@ setDoctors(dRes.data);
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
                                 <Award size={12} className="text-amber-500" /> {doc.experience} Years
                             </span>
-                            <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-                                <Clock size={12} className="text-rose-400" /> {doc.schedule?.[0]?.startTime || "09:00"} - {doc.schedule?.[0]?.endTime || "17:00"}
-                            </span>
                         </div>
                       </div>
                     </div>
@@ -165,12 +155,11 @@ setDoctors(dRes.data);
                 </div>
               ) : (
                 <div className="p-8 bg-slate-100 rounded-3xl text-center border-2 border-dashed border-slate-200">
-                  <p className="text-slate-400 text-sm font-medium italic">No doctor information currently listed for this hospital.</p>
+                  <p className="text-slate-400 text-sm font-medium italic">No doctor information currently listed.</p>
                 </div>
               )}
             </section>
 
-            {/* CAPACITY CARDS */}
             <div className="grid md:grid-cols-3 gap-4">
               <CapacityCard label="Standard Beds" current={hospital.beds?.available} total={hospital.beds?.total} color="bg-blue-500" />
               <CapacityCard label="ICU Units" current={hospital.icu?.available} total={hospital.icu?.total} color="bg-purple-500" />
@@ -182,11 +171,10 @@ setDoctors(dRes.data);
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-24">
               
-              {/* Emergency Alert for Hospital Admins */}
               {role === "hospital" && !hospital.isVerified && (
                  <div className="mb-4 p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2">
                     <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-amber-700 leading-tight font-medium">Your account is pending verification. Some actions may be restricted.</p>
+                    <p className="text-[11px] text-amber-700 leading-tight font-medium">Your account is pending verification.</p>
                  </div>
               )}
 
@@ -194,24 +182,28 @@ setDoctors(dRes.data);
               <p className="text-slate-500 text-sm mb-6 font-medium">Access healthcare or manage resources below.</p>
 
               <div className="space-y-3">
-                {!role && (
+                {/* ✅ Login to Continue: Only show if not loading and no user exists */}
+                {!authLoading && !user && (
                   <button onClick={() => navigate("/login")} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
                     Login to Continue
                   </button>
                 )}
 
-                {role === "patient" && (
+                {/* ✅ Patient Action */}
+                {user && role === "patient" && (
                   <button
-onClick={() => navigate(`/patient/hospital/${hospital._id}/appointment`)}                    className="w-full bg-rose-600 text-white py-4 rounded-2xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-2"
+                    onClick={() => navigate(`/patient/hospital/${hospital._id}/appointment`)}
+                    className="w-full bg-rose-600 text-white py-4 rounded-2xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-2"
                   >
                     <Calendar size={20} />
                     Book Appointment
                   </button>
                 )}
 
-                {role === "hospital" && (
+                {/* ✅ Hospital Admin Action */}
+                {user && role === "hospital" && (
                   <button
-                    onClick={() => navigate(isHospitalPanel ? `/hospital-admin/resources?hospitalId=${hospital._id}` : `/hospital-admin/resources?hospitalId=${hospital._id}`)}
+                    onClick={() => navigate(`/hospital-admin/resource-request`)}
                     className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
                   >
                     <Hospital size={20} />
@@ -241,7 +233,7 @@ function CapacityCard({ label, current, total, color }) {
     <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-full">
       <div className="mb-4">
         <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-none mb-1">{label}</p>
-        <p className="text-2xl font-black text-slate-800">{current} <span className="text-slate-300 text-base">/ {total}</span></p>
+        <p className="text-2xl font-black text-slate-800">{current || 0} <span className="text-slate-300 text-base">/ {total || 0}</span></p>
       </div>
       <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
         <div className={`h-full ${color} transition-all duration-700`} style={{ width: `${percentage}%` }} />

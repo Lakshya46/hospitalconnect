@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../../utils/api";
+import { useSocket } from "../../context/SocketContext"; // 🔥 Added socket hook
 
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState("live");
@@ -15,6 +16,7 @@ export default function Notifications() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
 
+const { socket } = useSocket(); // ✅ This grabs the actual socket instance
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -32,6 +34,29 @@ export default function Notifications() {
   };
 
   useEffect(() => { fetchData(); }, [activeTab]);
+
+  // 🔥 REAL-TIME SOCKET LISTENER
+  useEffect(() => {
+    if (!socket || activeTab !== "live") return;
+
+    socket.on("new_notification", (newNote) => {
+      console.log("⚡ New Demand Received via Socket:", newNote);
+      // Add new notification to the top of the list instantly
+      setNotifications((prev) => [newNote, ...prev]);
+    });
+
+    socket.on("notification_cancelled", ({ requestId }) => {
+      console.log("🗑️ Request Withdrawn by Sender:", requestId);
+      // Remove the notification from the list instantly
+      setNotifications((prev) => prev.filter(note => note.requestId !== requestId));
+    });
+
+    return () =>{
+
+    socket.off("new_notification");
+      socket.off("notification_cancelled");
+    }
+  }, [socket, activeTab]);
 
   const handleAction = async (notificationId, actionType) => {
     setActionLoading(notificationId);
@@ -65,23 +90,32 @@ export default function Notifications() {
         </button>
       </div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout">
         {loading ? (
-          <LoadingState />
+          <LoadingState key="loading" />
         ) : activeTab === "live" ? (
           <motion.div key="live" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
             <h2 className="text-3xl font-black text-slate-900 italic tracking-tight uppercase px-2">
               Incoming <span className="text-rose-600">Demands</span>
             </h2>
 
-            {notifications.length > 0 ? notifications.map(note => (
-              <NotificationCard 
-                key={note._id} 
-                note={note} 
-                onAction={handleAction} 
-                loading={actionLoading === note._id}
-              />
-            )) : (
+            {notifications.length > 0 ? (
+              notifications.map((note) => (
+                <motion.div
+                  layout // 🔥 Smoothly re-arranges list when items are added/removed
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  key={note._id}
+                >
+                  <NotificationCard 
+                    note={note} 
+                    onAction={handleAction} 
+                    loading={actionLoading === note._id}
+                  />
+                </motion.div>
+              ))
+            ) : (
               <EmptyState icon={<Bell size={48} />} title="Network Silent" subtitle="No active resource requests at the moment." />
             )}
           </motion.div>

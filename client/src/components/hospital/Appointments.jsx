@@ -121,7 +121,19 @@ export default function HospitalAppointments() {
                   {/* Patient Info */}
                   <div className="flex items-center gap-4 min-w-[220px]">
                     <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500">
-                      <MdPerson size={28} />
+    {app.patientId?.profilePic ? (
+      <img 
+        src={app.patientId.profilePic} 
+        alt={app.patientId.name} 
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          e.target.onerror = null; 
+          e.target.src = `https://ui-avatars.com/api/?name=${app.patientId?.name}&background=random`;
+        }}
+      />
+    ) : (
+      <MdPerson size={28} />
+    )}
                     </div>
                     <div>
                       <h3 className="font-black text-slate-900 text-lg leading-tight">{app.patientId?.name || "Unknown Patient"}</h3>

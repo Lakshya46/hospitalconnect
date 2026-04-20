@@ -3,7 +3,7 @@ import Hospital from "../models/Hospital.js";
 import authMiddleware, { authorizeRoles } from "../middleware/authMiddleware.js"; // 🔥 Import BOTH
 import { upload } from "../config/cloudinary.js"; 
 import Doctor from "../models/Doctor.js"; // 🔥 Import Doctor model for fetching doctors of a hospital
-
+import { getDashboardStats } from "../controllers/hospitalController.js"; // 🔥 Import the new controller function
 const router = express.Router();
 
 // 🏥 CREATE HOSPITAL PROFILE
@@ -111,6 +111,12 @@ router.put(
   }
 );
 
+
+router.get(
+  "/dashboard-stats", 
+  authMiddleware,authorizeRoles("hospital"),
+  getDashboardStats
+);
 // ... rest of the routes
 // routes/hospitalRoutes.js
 // routes/hospitalRoutes.js (Search Controller)
@@ -118,78 +124,61 @@ router.put(
 // routes/hospitalRoutes.js (or wherever your search route is)
 // routes/hospitalRoutes.js (Search Controller)
 
-router.get("/search-resources", async (req, res) => {
+// ✅ 1. Add 'auth' middleware to get req.user
+router.get("/search-resources", authMiddleware, authorizeRoles("hospital"), async (req, res) => {
   try {
     const { type, qty, category } = req.query;
     const requestedQty = parseInt(qty) || 1;
 
-    console.log(`DEBUG: Searching for Category: ${category}, Type: ${type}, Qty: ${requestedQty}`);
+    // ✅ 2. Find the Hospital ID of the user making the request
+    const requesterHospital = await Hospital.findOne({ userId: req.user.id });
+    if (!requesterHospital) {
+        return res.status(404).json({ msg: "Requester hospital profile not found" });
+    }
 
-    /**
-     * 1. UPDATED MAPPING
-     * Ensure these keys (e.g., "beds.general.available") match your 
-     * Hospital Schema EXACTLY.
-     */
     const typeMapping = {
-      // Supplies
       "Oxygen": "oxygen.available",
       "ICU Bed": "icu.available",
-      "General Bed": "beds.general.available", // Updated to match frontend change
-      
-      // Blood Groups (Standardizing the keys)
+      "General Bed": "beds.general.available",
       "A+": "bloodBank.A_pos", "A-": "bloodBank.A_neg",
       "B+": "bloodBank.B_pos", "B-": "bloodBank.B_neg",
       "O+": "bloodBank.O_pos", "O-": "bloodBank.O_neg",
       "AB+": "bloodBank.AB_pos", "AB-": "bloodBank.AB_neg"
     };
 
-    /**
-     * 2. DOCTOR SPECIALTY -> HOSPITAL DEPARTMENT MAPPING
-     * This maps the specialist you selected in the frontend to the 
-     * department types stored in your Hospital model.
-     */
-    const doctorToDepartment = {
-      "General Physician": "General Hospital",
-      "Cardiologist": "Cardiac Center",
-      "Oncologist": "Cancer / Oncology",
-      "Pediatrician": "Pediatric (Children)",
-      "Gynecologist": "Maternity / Gynecology",
-      "Orthopedic Surgeon": "Orthopedic (Bones)",
-      "Neurologist": "Neurology",
-      "Ophthalmologist": "Eye Care (Ophthalmology)",
-      "ENT Specialist": "ENT (Ear, Nose, Throat)",
-      "Dentist": "Dental Clinic",
-      "Psychiatrist": "Psychiatric / Mental Health",
-      "Emergency Specialist": "Trauma & Emergency",
-      "Ayurvedic Doctor": "Ayurvedic / Homeopathy",
-      "Radiologist": "Diagnostic Center",
-      "Physiotherapist": "Rehabilitation Center"
+    // ✅ 3. Initialize query with two global filters:
+    // - Profile must be completed
+    // - _id must NOT be the requester's hospital ID
+    let query = { 
+      profileCompleted: true,
+      _id: { $ne: requesterHospital._id } 
     };
 
-    let query = {};
-
     if (category === "Doctor") {
-      // Search for hospitals that have the department matching that specialty
-      const departmentNeeded = doctorToDepartment[type] || type;
-      query["type"] = { $in: [departmentNeeded] }; 
+      const matchingDoctors = await Doctor.find({ 
+        specialization: type, 
+        availability: "Available" 
+      }).select("hospitalId");
+
+      const hospitalIds = [...new Set(matchingDoctors.map(doc => doc.hospitalId))];
+
+      // ✅ 4. Combine 'Not Self' with 'Doctor Specialization'
+      // We filter the found IDs to exclude the requester's ID
+      query["_id"] = { 
+        $in: hospitalIds, 
+        $ne: requesterHospital._id 
+      };
     } 
     else if (typeMapping[type]) {
-      // Search for supplies or blood
       query[typeMapping[type]] = { $gte: requestedQty };
     } 
     else {
-      // Fallback: search departments array by default
       query["departments"] = { $in: [type] };
     }
 
-    // Only find hospitals that have completed their profile
-    query.profileCompleted = true;
-
     const hospitals = await Hospital.find(query);
 
-    console.log(`DEBUG: Query executed: ${JSON.stringify(query)}`);
-    console.log(`DEBUG: Found ${hospitals.length} hospitals`);
-
+    console.log(`DEBUG: Found ${hospitals.length} external hospitals`);
     res.json(hospitals);
 
   } catch (err) {

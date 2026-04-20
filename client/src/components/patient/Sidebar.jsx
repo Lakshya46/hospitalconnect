@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import api from "../../utils/api";
+import { useAuth } from "../../context/AuthContext";
 
 /* ICONS */
 import {
@@ -19,20 +18,10 @@ import {
 export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await api.get("/api/auth/me");
-        setUser(res.data);
-      } catch (err) {
-        const localUser = JSON.parse(localStorage.getItem("user") || "null");
-        setUser(localUser);
-      }
-    };
-    fetchUser();
-  }, []);
+  
+  // ✅ Accessing global user state. 
+  // This component will now re-render automatically when refreshUser() is called elsewhere.
+  const { user, logout } = useAuth();
 
   const menu = [
     { name: "Dashboard", path: "/patient/dashboard", icon: <MdDashboard /> },
@@ -42,7 +31,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   ];
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout(); // Use the logout function from context
     navigate("/login");
   };
 
@@ -125,47 +114,55 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       </div>
 
       {/* 3. FOOTER (Profile & Sign Out) */}
-      <div className="p-4 bg-slate-50/80 border-t border-slate-100 mt-auto space-y-3">
-        {user && (
-          <Link 
-            to="/patient/profile"
-            className={`flex items-center gap-3 p-2 rounded-2xl bg-white border-2 transition-all group overflow-hidden ${
-                collapsed 
-                ? 'justify-center border-transparent hover:border-rose-500' 
-                : 'border-white shadow-sm hover:shadow-md hover:border-rose-100'
-            }`}
-          >
-            {/* Avatar Logic */}
-            <div className="w-11 h-11 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0 text-white font-bold shadow-inner overflow-hidden border-2 border-white ring-1 ring-slate-100">
-              {user.profilePic ? (
-                <img 
-                    src={user.profilePic} 
-                    alt="profile" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              ) : (
-                <span className="text-lg">{user.name?.charAt(0).toUpperCase() || <MdAccountCircle size={24}/>}</span>
-              )}
-            </div>
-            
-            {!collapsed && (
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-[13px] font-black text-slate-900 truncate leading-tight">
-                  {user.name || "User"}
-                </p>
-                <p className="text-[10px] font-bold text-rose-600 truncate uppercase tracking-tighter">
-                  Patient Account
-                </p>
-              </motion.div>
-            )}
-            
-            {!collapsed && <MdArrowForwardIos className="text-slate-300 group-hover:text-rose-600 transition-colors ml-auto mr-1" size={12} />}
-          </Link>
+     {/* 3. FOOTER (Profile & Sign Out) */}
+<div className="p-4 bg-slate-50/80 border-t border-slate-100 mt-auto space-y-3">
+  {/* ✅ Fixed Logic: Wrap in parentheses and use optional chaining (?.) */}
+  {(user || localStorage.getItem("token")) && (
+    <Link 
+      to="/patient/profile"
+      className={`flex items-center gap-3 p-2 rounded-2xl bg-white border-2 transition-all group overflow-hidden ${
+          collapsed 
+          ? 'justify-center border-transparent hover:border-rose-500' 
+          : 'border-white shadow-sm hover:shadow-md hover:border-rose-100'
+      }`}
+    >
+      {/* Dynamic Avatar Logic */}
+      <div className="w-11 h-11 rounded-xl bg-rose-600 flex items-center justify-center flex-shrink-0 text-white font-bold shadow-inner overflow-hidden border-2 border-white ring-1 ring-slate-100">
+        {/* ✅ Use ?. to prevent crashing when user is null */}
+        {user?.profilePic ? (
+          <img 
+              src={user.profilePic} 
+              alt="profile" 
+              className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-lg">
+            {/* ✅ Safe check for name */}
+            {user?.name ? user.name.charAt(0).toUpperCase() : <MdAccountCircle size={24}/>}
+          </span>
         )}
+      </div>
+      
+      {!collapsed && (
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="flex-1 min-w-0"
+        >
+          <p className="text-[13px] font-black text-slate-900 truncate leading-tight">
+            {/* ✅ Fallback text while loading */}
+            {user?.name || "Loading..."}
+          </p>
+          <p className="text-[10px] font-bold text-rose-600 truncate uppercase tracking-tighter">
+            Patient Account
+          </p>
+        </motion.div>
+      )}
+      
+      {!collapsed && <MdArrowForwardIos className="text-slate-300 group-hover:text-rose-600 transition-colors ml-auto mr-1" size={12} />}
+    </Link>
+  )}
+
+  {/* ... Sign Out Button remains same ... */}
 
         <button
           onClick={handleLogout}

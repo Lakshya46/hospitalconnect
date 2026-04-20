@@ -47,7 +47,7 @@ export default function Blood() {
   if (loading) return <div className="h-screen flex items-center justify-center font-black text-rose-600 animate-pulse">SYNCING INVENTORY...</div>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-8 pt-24 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white p-8 pt-2 max-w-7xl mx-auto">
       <div className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
           <MdOpacity className="text-rose-600" /> Blood Bank <span className="text-rose-600">Inventory</span>

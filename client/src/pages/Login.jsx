@@ -3,9 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { MdEmail, MdLockOutline, MdArrowForward } from "react-icons/md";
+import { useAuth } from "../context/AuthContext"; 
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth(); 
   const API = import.meta.env.VITE_API_URL;
 
   const [role, setRole] = useState("patient");
@@ -24,19 +26,17 @@ export default function Login() {
       const res = await axios.post(`${API}/api/auth/login`, formData);
       const { token, user } = res.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", user.role);
-      localStorage.setItem("user", JSON.stringify(user));
+      await login(user, token);
 
-      // Enhanced Role-Based Redirect
+      // 1. UPDATED REDIRECT LOGIC (Admin removed)
       const routes = {
         hospital: "/hospital-admin/dashboard",
         patient: "/patient/dashboard",
-        admin: "/admin/dashboard",
       };
       
       navigate(routes[user.role] || "/");
     } catch (err) {
+      console.error("Login Error:", err);
       alert(err.response?.data?.msg || "Authentication failed. Please check your credentials.");
     } finally {
       setLoading(false);
@@ -46,7 +46,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4">
       
-      {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-rose-100 rounded-full blur-[120px] opacity-60"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-[120px] opacity-60"></div>
@@ -69,9 +68,9 @@ export default function Login() {
           <p className="text-slate-500 font-medium mt-2">Access the Hospital Connect Network</p>
         </div>
 
-        {/* ROLE SELECTOR */}
+        {/* 2. UPDATED ROLE SELECTOR (Admin removed) */}
         <div className="flex mb-8 bg-slate-100 rounded-2xl p-1.5 relative">
-          {["patient", "hospital", "admin"].map((r) => (
+          {["patient", "hospital"].map((r) => (
             <button
               key={r}
               type="button"
@@ -92,7 +91,6 @@ export default function Login() {
           ))}
         </div>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-4">
             <div className="relative">

@@ -16,7 +16,13 @@ const doctorSchema = new mongoose.Schema({
   },
   specialization: { 
     type: String, 
-    required: true 
+    required: true,
+    enum: [
+      "General Physician", "Cardiologist", "Oncologist", "Pediatrician", 
+      "Gynecologist", "Orthopedic Surgeon", "Neurologist", "Ophthalmologist", 
+      "ENT Specialist", "Dentist", "Psychiatrist", "Emergency Specialist", 
+      "Ayurvedic Doctor", "Radiologist", "Physiotherapist"
+    ]
   },
   experience: { 
     type: Number, 
@@ -27,16 +33,20 @@ const doctorSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+
+  /* 📞 CONTACT DETAILS (Matched with Frontend) */
   contact: { 
-    type: String 
+    type: String,
+    required: true // Usually mandatory for hospital coordination
   },
   email: { 
     type: String,
-    lowercase: true
+    lowercase: true,
+    trim: true,
+    // Optional: match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
   },
 
-  /* 🕒 WEEKLY SCHEDULE (NEW) */
-  // This allows different timings for different days
+  /* 🕒 WEEKLY SCHEDULE */
   schedule: [
     {
       day: { 
@@ -44,18 +54,9 @@ const doctorSchema = new mongoose.Schema({
         enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         required: true
       },
-      startTime: { 
-        type: String, // Store as "HH:mm" (e.g., "09:00")
-        default: "09:00" 
-      },
-      endTime: { 
-        type: String, // Store as "HH:mm" (e.g., "17:00")
-        default: "17:00" 
-      },
-      isAvailable: { 
-        type: Boolean, 
-        default: true 
-      }
+      startTime: { type: String, default: "09:00" },
+      endTime: { type: String, default: "17:00" },
+      isAvailable: { type: Boolean, default: true }
     }
   ],
 
@@ -72,7 +73,7 @@ const doctorSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Index for faster lookups when filtering by hospital
-doctorSchema.index({ hospitalId: 1 });
+// Optimize search by hospital and specialization
+doctorSchema.index({ hospitalId: 1, specialization: 1 });
 
 export default mongoose.model("Doctor", doctorSchema);

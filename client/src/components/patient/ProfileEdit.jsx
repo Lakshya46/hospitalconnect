@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from "../../utils/api";
+import { useAuth } from "../../context/AuthContext"; // ✅ Added Auth Hook
 import { 
   ArrowLeft, Save, Camera, Loader2, User, 
   Phone, Calendar, MapPin, Droplets, Plus, X, 
@@ -10,6 +11,7 @@ import {
 export default function ProfileEdit() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const { refreshUser } = useAuth(); // ✅ Extract refresh trigger
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,7 +27,6 @@ export default function ProfileEdit() {
     const fetchCurrentData = async () => {
       try {
         setLoading(true);
-        // Ensure path matches your baseURL setup
         const { data } = await api.get('api/auth/me'); 
         setFormData({
           name: data.name || '',
@@ -69,16 +70,24 @@ export default function ProfileEdit() {
     e.preventDefault();
     setSaving(true);
     const uploadData = new FormData();
+    
     Object.keys(formData).forEach(key => {
       if (key === 'history') uploadData.append(key, JSON.stringify(formData[key]));
       else uploadData.append(key, formData[key]);
     });
+    
     if (selectedFile) uploadData.append('profilePic', selectedFile);
 
     try {
+      // 1. Send Update to Server
       await api.put('api/auth/update-profile', uploadData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+
+      // 2. 🔥 TRIGGER GLOBAL RE-RENDER
+      // This updates the Context 'user' state, which forces Sidebar & Header to update
+      await refreshUser(); 
+
       navigate('/patient/profile'); 
     } catch (err) {
       alert(err.response?.data?.msg || "Failed to update profile");
@@ -101,13 +110,12 @@ export default function ProfileEdit() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] pb-20 font-sans">
-      {/* Visual Depth Header */}
       <div className="h-64 bg-gradient-to-br from-rose-800 via-rose-600 to-rose-500 w-full absolute top-0 z-0 shadow-inner" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 pt-10">
-        {/* Navigation & Actions */}
         <div className="flex items-center justify-between mb-10">
           <button 
+            type="button"
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-all bg-white/10 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-white/20 shadow-lg"
           >
@@ -116,6 +124,7 @@ export default function ProfileEdit() {
           </button>
           
           <button 
+            type="submit"
             onClick={handleSubmit}
             disabled={saving}
             className="flex items-center gap-3 bg-white text-red-600 px-8 py-3 rounded-2xl shadow-2xl shadow-red-900/30 hover:translate-y-[-2px] active:translate-y-[1px] transition-all font-black uppercase tracking-widest text-xs disabled:opacity-50"
@@ -126,8 +135,7 @@ export default function ProfileEdit() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Left: Avatar & ID */}
+          {/* Avatar Section */}
           <div className="lg:col-span-4">
             <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-gray-200/60 border border-gray-100 flex flex-col items-center sticky top-10">
               <div className="relative group">
@@ -139,7 +147,7 @@ export default function ProfileEdit() {
                   />
                 </div>
                 <button 
-                  type="button"
+                  type="button" 
                   onClick={() => fileInputRef.current.click()}
                   className="absolute -bottom-2 -right-2 bg-rose-500 text-white p-4 rounded-2xl shadow-xl hover:bg-red-700 transition-all hover:rotate-12"
                 >
@@ -147,7 +155,6 @@ export default function ProfileEdit() {
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
               </div>
-              
               <div className="mt-8 text-center">
                 <h2 className="text-2xl font-black text-gray-800 tracking-tight">{formData.name || 'Set Name'}</h2>
                 <div className="mt-3 flex items-center justify-center gap-2">
@@ -158,13 +165,10 @@ export default function ProfileEdit() {
             </div>
           </div>
 
-          {/* Right: Detailed Form */}
+          {/* Form Section */}
           <div className="lg:col-span-8 space-y-8">
-            
-            {/* General Information Card */}
             <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl shadow-gray-200/50 border border-gray-50 overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-red-50/50 rounded-bl-[5rem] -mr-10 -mt-10" />
-              
               <div className="flex items-center gap-4 mb-10 relative">
                 <div className="p-3.5 bg-red-50 text-red-600 rounded-[1.2rem]">
                   <UserCircle size={28} />
@@ -190,7 +194,7 @@ export default function ProfileEdit() {
                       <option value="">Choose Type</option>
                       {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
                     </select>
-                    <Droplets className="absolute left-4 top-1/2 -translate-y-1/2 text-red-400 transition-transform group-focus-within:scale-110" size={18} />
+                    <Droplets className="absolute left-4 top-1/2 -translate-y-1/2 text-red-400" size={18} />
                   </div>
                 </div>
 
@@ -199,16 +203,16 @@ export default function ProfileEdit() {
                   <div className="relative group">
                     <textarea 
                       name="address" rows="3" value={formData.address} onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-4 rounded-[1.5rem] bg-gray-50 border-2 border-transparent focus:bg-white focus:border-red-100 focus:ring-4 focus:ring-red-50/50 outline-none transition-all resize-none font-bold text-gray-700 placeholder:text-gray-300"
-                      placeholder="Street, Landmark, Bhopal..."
+                      className="w-full pl-12 pr-4 py-4 rounded-[1.5rem] bg-gray-50 border-2 border-transparent focus:bg-white focus:border-red-100 focus:ring-4 focus:ring-red-50/50 outline-none transition-all resize-none font-bold text-gray-700"
+                      placeholder="Street, Landmark..."
                     />
-                    <MapPin className="absolute left-4 top-5 text-red-400 transition-transform group-focus-within:scale-110" size={18} />
+                    <MapPin className="absolute left-4 top-5 text-red-400" size={18} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Medical History Card */}
+            {/* Medical History Section */}
             <div className="bg-white p-8 md:p-12 rounded-[3rem] shadow-xl shadow-gray-200/50 border border-gray-50">
               <div className="flex justify-between items-center mb-10">
                 <div className="flex items-center gap-4">
@@ -227,7 +231,7 @@ export default function ProfileEdit() {
 
               <div className="space-y-5">
                 {formData.history.map((item, index) => (
-                  <div key={index} className="flex gap-4 group animate-in slide-in-from-right-4 duration-500">
+                  <div key={index} className="flex gap-4 group">
                     <div className="flex-1 relative">
                       <input 
                         value={item} 
@@ -261,9 +265,9 @@ function FormInput({ label, icon, ...props }) {
       <div className="relative group">
         <input 
           {...props}
-          className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-red-100 focus:ring-4 focus:ring-red-50/50 outline-none transition-all font-bold text-gray-700 placeholder:text-gray-300"
+          className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:bg-white focus:border-red-100 focus:ring-4 focus:ring-red-50/50 outline-none transition-all font-bold text-gray-700"
         />
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-400 transition-transform group-focus-within:scale-110">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-red-400">
           {icon}
         </div>
       </div>
