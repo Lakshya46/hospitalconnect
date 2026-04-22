@@ -21,9 +21,7 @@ app.use(cors({
 }));
 
 
-app.options("/*", (req, res) => {
-  res.sendStatus(200);
-});
+
 app.use(express.json());
 
 // 3. Initialize Socket.io with the server wrapper
