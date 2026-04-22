@@ -16,7 +16,8 @@ const server = http.createServer(app); // 2. Create the HTTP server wrapper
 
 // ✅ CORS
 app.use(cors({
-  origin: ["http://localhost:5173", process.env.CLIENT_URL],
+  origin: [ process.env.CLIENT_URL],
+  methods: ["GET", "POST", "PATCH", "PUT"],
   credentials: true
 }));
 
