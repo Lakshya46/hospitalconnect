@@ -7,8 +7,7 @@ export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
       origin: [process.env.CLIENT_URL], 
-      methods: ["GET", "POST", "PATCH", "PUT"],
-      credentials: true 
+ methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],      credentials: true 
     },
     transports: ["websocket", "polling"] 
   });

@@ -17,9 +17,11 @@ const server = http.createServer(app); // 2. Create the HTTP server wrapper
 // ✅ CORS
 app.use(cors({
   origin: [ process.env.CLIENT_URL],
-  methods: ["GET", "POST", "PATCH", "PUT"],
-  credentials: true
+ methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  credentials: true
 }));
+
+
+app.options("*", cors());
 
 app.use(express.json());
 
