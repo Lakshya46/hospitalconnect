@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 const SocketContext = createContext();
 
 
-const SOCKET_SERVER_URL = import.meta.env.VITE_API || "http://localhost:5000";
+const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL|| "http://localhost:5000";
 export const SocketProvider = ({ children, hospitalId }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
