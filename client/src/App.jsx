@@ -18,7 +18,7 @@ function App() {
     <div className="bg-[#fcfdfe] min-h-screen font-sans text-slate-900 overflow-x-hidden">
       
       {/* ===== HERO SECTION ===== */}
-      <section className="relative pt-10 md:pt-25 pb-20 md:pb-32 px-4 md:px-6">
+      <section className="relative pt-12 md:pt-15 pb-20 md:pb-32 px-4 md:px-6">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 md:gap-16 items-center">
           
           <motion.div 
@@ -64,7 +64,7 @@ function App() {
           >
             <div className="absolute -top-5 -left-5 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-60"></div>
             <img 
-              src="https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=1000" 
+              src="../../public/img3.png" 
               alt="Medical Team"
               className="rounded-[30px] md:rounded-[40px] shadow-2xl grayscale-[20%] w-full aspect-video md:aspect-auto object-cover"
             />

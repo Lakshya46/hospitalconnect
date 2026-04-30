@@ -131,7 +131,7 @@ export default function Hospitals() {
       <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-white">
         
         <div className="px-3 sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-50">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 mt-4">
             <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <MdLocalHospital className="text-rose-600" /> Medical Network
             </h1>
