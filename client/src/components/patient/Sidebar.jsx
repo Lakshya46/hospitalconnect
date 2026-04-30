@@ -72,7 +72,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       </div>
 
       {/* 2. NAVIGATION AREA */}
-      <div className="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-3 py-8 custom-scrollbar">
         {!collapsed && (
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-6 px-2">
             Patient Services

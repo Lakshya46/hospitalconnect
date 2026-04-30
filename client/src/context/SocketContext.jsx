@@ -1,57 +1,51 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+
 const SocketContext = createContext();
+const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-
-const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL|| "http://localhost:5000";
 export const SocketProvider = ({ children, hospitalId }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
+  // Effect 1: Connect once on mount
   useEffect(() => {
-    // 1. Establish connection
-const token = localStorage.getItem("token");
-    if (!token) return; // 🛑 Don't connect if we don't have a badge!
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     const newSocket = io(SOCKET_SERVER_URL, {
-      transports: ["websocket"], // Prioritize websocket for performance
+      transports: ["websocket"],
       reconnectionAttempts: 5,
       timeout: 10000,
-      auth: { token: localStorage.getItem("token") }
+      auth: { token }
     });
 
-    // 2. Event Listeners for status tracking
     newSocket.on("connect", () => {
       setIsConnected(true);
-      console.log("Connected to WebSocket:", newSocket.id);
-      
-      // Re-join room if the connection was dropped and restored
-      if (hospitalId) {
-        newSocket.emit("join_hospital", hospitalId);
-      }
+      console.log("✅ Socket connected:", newSocket.id);
     });
 
     newSocket.on("disconnect", () => {
       setIsConnected(false);
     });
 
-    // 3. Dynamic Room Joining
-    // If hospitalId changes while socket is already connected
-    if (hospitalId && newSocket.connected) {
-      newSocket.emit("join_hospital", hospitalId);
-    }
-
     setSocket(newSocket);
 
-    // 4. Cleanup
     return () => {
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.close();
     };
-  }, [hospitalId]);
+  }, []); // empty — connect once only
+
+  // Effect 2: Join room when hospitalId becomes available
+  useEffect(() => {
+    if (!socket || !hospitalId) return;
+    console.log("🏥 Joining room:", hospitalId);
+    socket.emit("join_hospital", hospitalId);
+  }, [socket, hospitalId]);
 
   return (
-    // Providing isConnected allows UI to show "Online/Offline" status
     <SocketContext.Provider value={{ socket, isConnected }}>
       {children}
     </SocketContext.Provider>

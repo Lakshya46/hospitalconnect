@@ -7,7 +7,6 @@ export const addDoctor = async (req, res) => {
     const hospital = await Hospital.findOne({ userId: req.user.id });
     if (!hospital) return res.status(404).json({ msg: "Hospital profile not found" });
 
-    // 🛠️ PARSE DATA: FormData sends everything as strings
     const doctorData = { 
       ...req.body, 
       hospitalId: hospital._id,
@@ -15,12 +14,16 @@ export const addDoctor = async (req, res) => {
       schedule: req.body.schedule ? JSON.parse(req.body.schedule) : [] 
     };
     
-    if (req.file) doctorData.image = req.file.path;
+    // ✅ CRITICAL FIX: Explicitly handle the image field
+    if (req.file) {
+      doctorData.image = req.file.path; 
+    } else {
+      delete doctorData.image; // Or doctorData.image = null;
+    }
 
     const doctor = new Doctor(doctorData);
     await doctor.save();
     
-    // Increment doctor count in Hospital profile
     await Hospital.findByIdAndUpdate(hospital._id, { $inc: { doctorsCount: 1 } });
 
     res.status(201).json({ msg: "Doctor added to registry", doctor });
@@ -29,7 +32,6 @@ export const addDoctor = async (req, res) => {
     res.status(500).json({ msg: "Failed to add doctor", error: err.message });
   }
 };
-
 // @desc    Update doctor profile
 export const updateDoctor = async (req, res) => {
   try {

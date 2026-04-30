@@ -15,10 +15,11 @@ router.put("/update-profile", authMiddleware, upload.single("profilePic"), updat
 router.post("/save-subscription", authMiddleware, async (req, res) => {
   try {
     const subscription = req.body;
-    
-    // req.user.id comes from your authMiddleware
+    console.log("📥 Saving subscription for user:", req.user.id);
+    console.log("📦 Subscription data:", JSON.stringify(subscription));
+
     const user = await User.findByIdAndUpdate(
-      req.user.id, 
+      req.user.id,
       { pushSubscription: subscription },
       { new: true }
     );
@@ -27,9 +28,10 @@ router.post("/save-subscription", authMiddleware, async (req, res) => {
       return res.status(404).json({ msg: "User not found" });
     }
 
+    console.log("✅ Subscription saved. Has subscription now:", !!user.pushSubscription);
     res.status(200).json({ msg: "Subscription saved successfully" });
   } catch (err) {
-    console.error("Error saving subscription:", err.message);
+    console.error("❌ Error saving subscription:", err.message);
     res.status(500).json({ msg: "Internal Server Error", error: err.message });
   }
 });

@@ -14,7 +14,7 @@ export default function PatientLayout() {
         {/* MAIN CONTENT */}
         <div
           className={`p-6 transition-all duration-300
-            ${collapsed ? "ml-20" : "ml-64"}
+            ${collapsed ? "ml-15" : "ml-64"}
           `}
         >
           <Outlet />

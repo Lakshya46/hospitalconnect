@@ -6,12 +6,16 @@ import Notification from "../models/Notification.js";
 import webpush from "web-push";
 import { getIO } from "../config/socket.js";
 // Config web-push
+// Config web-push
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     "mailto:admin@ehospital.com",
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
+  console.log("✅ VAPID keys loaded"); // ADD
+} else {
+  console.log("❌ VAPID keys MISSING"); // ADD
 }
 
 // controllers/resourceController.js
@@ -62,7 +66,7 @@ export const createRequest = async (req, res) => {
 
         // Emit only to this hospital's room
         io.to(hosp._id.toString()).emit("new_notification", {
-          ...specificNote._doc,
+          ...specificNote.toObject(),
           senderHospital: { name: hospital.name, _id: hospital._id } // Send sender details for the UI link
         });
       });
@@ -76,11 +80,17 @@ export const createRequest = async (req, res) => {
         url: "/hospital-admin/notifications" 
       });
 
-      otherHospitals.forEach(hosp => {
-        if (hosp.userId && hosp.userId.pushSubscription) {
-          webpush.sendNotification(hosp.userId.pushSubscription, payload).catch(err => console.error(err));
-        }
-      });
+     otherHospitals.forEach(hosp => {
+  console.log(`--- Checking: ${hosp.name}`);
+  console.log(`    userId populated: ${!!hosp.userId}`);
+  console.log(`    pushSubscription: ${!!hosp.userId?.pushSubscription}`);
+
+  if (hosp.userId && hosp.userId.pushSubscription) {
+    webpush.sendNotification(hosp.userId.pushSubscription, payload)
+      .then(() => console.log(`✅ Push sent to ${hosp.name}`))
+      .catch(err => console.error(`❌ Push FAILED for ${hosp.name}:`, err.statusCode, err.body));
+  }
+});
     }
 
     res.status(201).json(newRequest);

@@ -15,8 +15,8 @@ export default function HospitalAdmin() {
 
       {/* MAIN CONTENT */}
       <div
-        className={`p-6 transition-all duration-300
-          ${collapsed ? "ml-20" : "ml-64"}
+        className={`p-4 transition-all duration-300
+          ${collapsed ? "ml-15" : "ml-64"}
         `}
       >
         <Outlet />

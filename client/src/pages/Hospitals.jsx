@@ -125,13 +125,13 @@ export default function Hospitals() {
   );
 
   return (
-    <div className="flex h-screen bg-[#FDFEFF] pt-1 overflow-hidden">
+    <div className="flex h-screen bg-[#FDFEFF]  overflow-hidden">
       
       {/* 1. LEFT SEARCH & CARDS PANE */}
       <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-white">
         
-        <div className="p-3 sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-50">
-          <div className="flex items-center justify-between mb-4">
+        <div className="px-3 sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-50">
+          <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 <MdLocalHospital className="text-rose-600" /> Medical Network
             </h1>
@@ -140,7 +140,7 @@ export default function Hospitals() {
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="relative group">
               <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
               <input
@@ -197,55 +197,79 @@ export default function Hospitals() {
           <div className="grid gap-4 md:grid-cols-2">
             <AnimatePresence>
               {filteredHospitals.map(h => (
-                <motion.div
-                  layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  key={h._id}
-                  onClick={() => handleHospitalClick(h._id)} 
-                  className="group bg-white p-5 rounded-3xl border border-slate-100 hover:border-rose-200 hover:shadow-xl hover:shadow-rose-900/5 transition-all cursor-pointer relative overflow-hidden"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex flex-wrap gap-1">
-                        {h.type?.slice(0, 2).map(t => (
-                            <span key={t} className="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">{t}</span>
-                        ))}
-                    </div>
-                    {h.distance && (
-                      <div className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">
-                        {h.distance.toFixed(1)} KM
-                      </div>
-                    )}
-                  </div>
+     <motion.div
+  layout
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  key={h._id}
+  onClick={() => handleHospitalClick(h._id)}
+  className="group bg-white p-5 rounded-3xl border border-slate-100 hover:border-rose-200 hover:shadow-xl hover:shadow-rose-900/5 transition-all cursor-pointer relative overflow-hidden"
+>
+  {/* Header: Type and Distance */}
+  <div className="flex justify-between items-start mb-4">
+    <div className="flex flex-wrap gap-1">
+      {h.type?.slice(0, 2).map((t) => (
+        <span key={t} className="text-[8px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">
+          {t}
+        </span>
+      ))}
+    </div>
+    {h.distance && (
+      <div className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">
+        {h.distance.toFixed(1)} KM AWAY
+      </div>
+    )}
+  </div>
 
-                  <h3 className="font-bold text-slate-800 group-hover:text-rose-600 transition-colors mb-1 truncate">{h.name}</h3>
-                  <p className="text-[10px] text-slate-400 mb-4 flex items-center gap-1 font-medium">
-                    <MdPlace size={12} className="text-rose-400" /> {h.location}
-                  </p>
+  {/* Main Info */}
+  <h3 className="font-bold text-slate-800 group-hover:text-rose-600 transition-colors mb-1 truncate">
+    {h.name}
+  </h3>
+  
+  <div className="space-y-2.5 mt-3">
+    {/* Physical Address */}
+    <div className="flex items-start gap-2.5">
+      <MdPlace size={15} className="text-rose-500 mt-0.5 shrink-0" />
+      <p className="text-[11px] text-slate-500 leading-tight font-medium">
+        {h.location || "Address not provided"}
+      </p>
+    </div>
 
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="bg-slate-50 p-2 rounded-xl text-center">
-                        <span className="block text-[7px] font-black text-slate-400 uppercase">Beds</span>
-                        <span className="text-xs font-black text-slate-700">{h.beds?.available || 0}</span>
-                    </div>
-                    <div className="bg-rose-50 p-2 rounded-xl text-center border border-rose-100/50">
-                        <span className="block text-[7px] font-black text-rose-400 uppercase">ICU</span>
-                        <span className="text-xs font-black text-rose-600">{h.icu?.available || 0}</span>
-                    </div>
-                    <div className="bg-emerald-50 p-2 rounded-xl text-center">
-                        <span className="block text-[7px] font-black text-emerald-500 uppercase">Oxygen</span>
-                        <span className="text-xs font-black text-emerald-600">Yes</span>
-                    </div>
-                  </div>
+    {/* Contact Number */}
+    <div className="flex items-center gap-2.5">
+      <MdCall size={15} className="text-emerald-500 shrink-0" />
+      <p className="text-[11px] text-slate-600 font-bold">
+        {h.contact || h.phone || "Not available"}
+      </p>
+    </div>
 
-                  <div className="flex items-center justify-between border-t border-slate-50 pt-3">
-                    <div className="flex items-center gap-2 text-slate-500">
-                        <MdAccessTime className="text-emerald-500" />
-                        <span className="text-[10px] font-bold">Open 24/7</span>
-                    </div>
-                    <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center group-hover:bg-rose-600 transition-colors">
-                        <MdArrowForward size={16} />
-                    </div>
-                  </div>
-                </motion.div>
+    {/* Contact Email */}
+    <div className="flex items-center gap-2.5">
+      <div className="w-[15px] flex justify-center">
+        <span className="text-[10px] font-black text-blue-500">@</span>
+      </div>
+      <p className="text-[11px] text-slate-500 font-medium truncate italic">
+        {h.email || "contact@hospital.com"}
+      </p>
+    </div>
+  </div>
+
+  {/* Footer: Operational Status & Action */}
+  <div className="flex items-center justify-between border-t border-slate-50 mt-5 pt-3">
+    <div className="flex items-center gap-2 text-slate-400">
+      <MdAccessTime className="text-emerald-500" />
+      <span className="text-[10px] font-bold uppercase tracking-wider">
+        Open 24/7
+      </span>
+    </div>
+    <div className="flex items-center gap-2 text-rose-600 font-black text-[10px] uppercase tracking-widest">
+      Details
+      <div className="w-7 h-7 bg-slate-900 text-white rounded-full flex items-center justify-center group-hover:bg-rose-600 transition-colors">
+        <MdArrowForward size={14} />
+      </div>
+    </div>
+  </div>
+</motion.div>
               ))}
             </AnimatePresence>
           </div>

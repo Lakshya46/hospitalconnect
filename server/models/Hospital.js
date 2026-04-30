@@ -106,11 +106,18 @@ const hospitalSchema = new mongoose.Schema({
 
   /* 📝 PUBLIC PROFILE DATA */
   description: { type: String, trim: true },
-  workingHours: {
-    weekdays: { type: String, default: "24 Hours" },
-    saturday: { type: String, default: "24 Hours" },
-    sunday: { type: String, default: "24 Hours" }
-  },
+  openingTime: {
+      type: String, // "09:00"
+      default: "09:00",
+    },
+    closingTime: {
+      type: String, // "21:00"
+      default: "21:00",
+    },
+    workingDays: {
+      type: [String], 
+      default: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    },
 
   /* 🟢 VERIFICATION & SECURITY */
   licenseNumber: {

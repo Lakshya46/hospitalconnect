@@ -72,13 +72,21 @@ router.put(
         if (req.files.coverPhoto) updates.coverPhoto = req.files.coverPhoto[0].path;
       }
 
-      // 🏥 FIX: Parse 'type' Array if sent as JSON string (from FormData)
+      // 🏥 FIX: Parse 'type' Array
       if (updates.type && typeof updates.type === "string") {
         try {
           updates.type = JSON.parse(updates.type);
         } catch (e) {
-          // If it's a single value not wrapped in [], turn it into an array
           updates.type = [updates.type];
+        }
+      }
+
+      // 🗓️ NEW FIX: Parse 'workingDays' Array (This was missing!)
+      if (updates.workingDays && typeof updates.workingDays === "string") {
+        try {
+          updates.workingDays = JSON.parse(updates.workingDays);
+        } catch (e) {
+          updates.workingDays = updates.workingDays.split(","); // Fallback if not JSON
         }
       }
 
@@ -96,8 +104,8 @@ router.put(
         { userId: req.user.id },
         { ...updates, profileCompleted: true },
         { 
-          returnDocument: 'after', // ✅ FIXED: Replaced 'new: true' to remove warning
-          runValidators: true      // ✅ Ensures the 'enum' check still happens
+          returnDocument: 'after', 
+          runValidators: true 
         }
       );
 
@@ -105,7 +113,7 @@ router.put(
 
       res.json({ msg: "Profile Synced Successfully", hospital: updated });
     } catch (err) {
-      console.error("Update Error Detail:", err); // Log full error to terminal
+      console.error("Update Error Detail:", err);
       res.status(500).json({ msg: "Update failed", error: err.message });
     }
   }

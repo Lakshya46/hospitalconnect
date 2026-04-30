@@ -65,11 +65,21 @@ export default function Profile() {
               <div className="h-24 bg-gradient-to-r from-red-600 to-rose-500" />
               <div className="px-6 pb-8 flex flex-col items-center">
                 <div className="relative -mt-12 mb-4">
-                  <img 
-                    src={patient.profilePic || 'https://via.placeholder.com/150'} 
-                    alt="Profile" 
-                    className="w-32 h-32 rounded-3xl object-cover border-4 border-white shadow-lg"
-                  />
+                <img 
+  src={
+    patient.profilePic 
+      ? (patient.profilePic.startsWith('http') 
+          ? patient.profilePic 
+          : `${BASE_URL}/${patient.profilePic}`)
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name)}&background=fecaca&color=dc2626&size=150`
+  } 
+  alt="Profile" 
+  className="w-32 h-32 rounded-3xl object-cover border-4 border-white shadow-lg bg-gray-100"
+  onError={(e) => {
+    e.target.onerror = null; 
+    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name)}&background=fecaca&color=dc2626&size=150`;
+  }}
+/>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">{patient.name}</h2>
                 <p className="text-red-600 font-medium text-sm mb-6 uppercase tracking-wider">
