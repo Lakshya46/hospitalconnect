@@ -64,8 +64,8 @@ function App() {
           >
             <div className="absolute -top-5 -left-5 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-60"></div>
             <img 
-              src="../../public/img3.png" 
-              alt="Medical Team"
+src="/img3.png"
+        alt="Medical Team"
               className="rounded-[30px] md:rounded-[40px] shadow-2xl grayscale-[20%] w-full aspect-video md:aspect-auto object-cover"
             />
             {/* Floating UI Card */}
